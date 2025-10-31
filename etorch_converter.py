@@ -28,49 +28,16 @@ except ImportError as e:
     EXECUTORCH_AVAILABLE = False
 
 
-class Colors:
-    """ANSI color codes for pretty terminal output"""
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    END = '\033[0m'
-
-
-def print_section(title: str):
-    """Print a section header"""
-    print(f"\n{Colors.BOLD}{Colors.CYAN}{'='*60}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.CYAN}{title.center(60)}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.CYAN}{'='*60}{Colors.END}\n")
-
-
-def print_step(step: str, detail: str = ""):
-    """Print a step with optional detail"""
-    print(f"{Colors.BLUE}▶{Colors.END} {
-          Colors.BOLD}{step}{Colors.END}", end="")
-    if detail:
-        print(f" {Colors.YELLOW}{detail}{Colors.END}")
-    else:
-        print()
-
-
-def print_success(message: str):
-    """Print a success message"""
-    print(f"{Colors.GREEN}✓{Colors.END} {message}")
-
-
-def print_error(message: str):
-    """Print an error message"""
-    print(f"{Colors.RED}✗{Colors.END} {message}", file=sys.stderr)
-
-
-def print_info(key: str, value: Any):
-    """Print an info key-value pair"""
-    print(f"  {Colors.CYAN}{key}:{Colors.END} {value}")
+from etorch_utils import (
+    Colors,
+    print_header,
+    print_subheader,
+    print_success,
+    print_warning,
+    print_error,
+    print_info,
+    print_step,
+)
 
 
 class ModelInfo:
@@ -107,8 +74,8 @@ class ExecutorchConverter:
 
     def load_model(self) -> Tuple[torch.nn.Module, Any]:
         """Load the model from HuggingFace"""
-        print_section("Loading Model")
-        print_step("Loading from:", str(self.model_path))
+        print_subheader("Loading Model")
+        print_step(f"Loading from: {self.model_path}")
 
         start_time = time.time()
 
@@ -159,7 +126,7 @@ class ExecutorchConverter:
 
     def analyze_model(self, model: torch.nn.Module) -> Dict[str, Any]:
         """Analyze model structure"""
-        print_section("Analyzing Model Structure")
+        print_subheader("Analyzing Model Structure")
 
         analysis = {
             "modules": {},
@@ -192,7 +159,7 @@ class ExecutorchConverter:
 
     def create_example_inputs(self, model: torch.nn.Module, tokenizer: Any) -> Tuple:
         """Create example inputs for export"""
-        print_section("Preparing Example Inputs")
+        print_subheader("Preparing Example Inputs")
 
         if self.model_info.model_type == "parler_tts":
             # ParlerTTS requires two text inputs
@@ -218,7 +185,7 @@ class ExecutorchConverter:
         example_inputs: Tuple
     ) -> bytes:
         """Export model to Executorch format"""
-        print_section(f"Exporting to Executorch ({self.backend})")
+        print_subheader(f"Exporting to Executorch ({self.backend})")
 
         if not EXECUTORCH_AVAILABLE:
             print_error("Executorch is not properly installed")
@@ -228,13 +195,13 @@ class ExecutorchConverter:
 
         try:
             # Step 1: Capture the model graph
-            print_step("Step 1/4:", "Capturing model graph...")
+            print_step("Step 1/4: Capturing model graph...")
             with torch.no_grad():
                 exported_program = export(model, example_inputs)
             print_success("Graph captured")
 
             # Step 2: Convert to Edge dialect
-            print_step("Step 2/4:", "Converting to Edge dialect...")
+            print_step("Step 2/4: Converting to Edge dialect...")
             edge_config = EdgeCompileConfig(
                 _check_ir_validity=False,  # May need to disable for complex models
             )
@@ -243,8 +210,7 @@ class ExecutorchConverter:
             print_success("Edge dialect generated")
 
             # Step 3: Apply backend-specific optimizations
-            print_step(
-                "Step 3/4:", f"Applying {self.backend} optimizations...")
+            print_step(f"Step 3/4: Applying {self.backend} optimizations...")
 
             if self.backend == "xnnpack":
                 try:
@@ -265,7 +231,7 @@ class ExecutorchConverter:
                     print_info("Note", "Continuing with portable backend")
 
             # Step 4: Generate Executorch program
-            print_step("Step 4/4:", "Generating Executorch program...")
+            print_step("Step 4/4: Generating Executorch program...")
             exec_config = ExecutorchBackendConfig(
                 extract_delegate_segments=True,
             )
@@ -286,13 +252,13 @@ class ExecutorchConverter:
 
     def save_model(self, buffer: bytes, metadata: Dict[str, Any]):
         """Save the exported model and metadata"""
-        print_section("Saving Model")
+        print_subheader("Saving Model")
 
         # Save .pte file
         model_name = self.model_path.name
         output_file = self.output_dir / f"{model_name}_{self.backend}.pte"
 
-        print_step("Writing model to:", str(output_file))
+        print_step(f"Writing model to: {output_file}")
         with open(output_file, "wb") as f:
             f.write(buffer)
 
@@ -311,7 +277,7 @@ class ExecutorchConverter:
             "original_size_mb": self.model_info.model_size_mb,
         })
 
-        print_step("Writing metadata to:", str(metadata_file))
+        print_step(f"Writing metadata to: {metadata_file}")
         with open(metadata_file, "w") as f:
             json.dump(metadata, f, indent=2)
         print_success("Metadata saved")
@@ -320,11 +286,7 @@ class ExecutorchConverter:
 
     def convert(self) -> Path:
         """Main conversion pipeline"""
-        print(f"\n{Colors.BOLD}{Colors.HEADER}")
-        print("╔═══════════════════════════════════════════════════════════╗")
-        print("║           EXECUTORCH MODEL CONVERTER                      ║")
-        print("╚═══════════════════════════════════════════════════════════╝")
-        print(f"{Colors.END}")
+        print_header("EXECUTORCH MODEL CONVERTER")
 
         total_start = time.time()
 
@@ -346,7 +308,7 @@ class ExecutorchConverter:
 
             total_time = time.time() - total_start
 
-            print_section("Conversion Complete!")
+            print_subheader("Conversion Complete!")
             print_success(f"Total time: {total_time:.2f}s")
             print_info("Output", output_file)
 

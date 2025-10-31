@@ -17,17 +17,15 @@ import torch
 import numpy as np
 
 
-class Colors:
-    """ANSI colors"""
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    DIM = '\033[2m'
-    END = '\033[0m'
+from etorch_utils import (
+    Colors,
+    print_header,
+    print_success,
+    print_warning,
+    print_error,
+    print_step,
+    format_latency,
+)
 
 
 @dataclass
@@ -48,32 +46,7 @@ class BenchmarkResult:
     total_runs: int
 
 
-def print_header(title: str):
-    """Print fancy header"""
-    print(f"\n{Colors.BOLD}{Colors.HEADER}{'='*80}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.HEADER}{title.center(80)}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.HEADER}{'='*80}{Colors.END}\n")
 
-
-def print_table_header(columns: List[str], widths: List[int]):
-    """Print table header"""
-    header = ""
-    separator = ""
-    for col, width in zip(columns, widths):
-        header += f"{Colors.BOLD}{Colors.CYAN}{col:^{width}}{Colors.END} │ "
-        separator += "─" * width + "─┼─"
-
-    print(header[:-3])
-    print(f"{Colors.CYAN}{separator[:-3]}{Colors.END}")
-
-
-def print_table_row(values: List[str], widths: List[int], highlight: bool = False):
-    """Print table row"""
-    row = ""
-    color = Colors.GREEN if highlight else ""
-    for val, width in zip(values, widths):
-        row += f"{color}{val:^{width}}{Colors.END} │ "
-    print(row[:-3])
 
 
 def format_latency(ms: float) -> str:
@@ -86,15 +59,7 @@ def format_latency(ms: float) -> str:
         return f"{ms/1000:.2f}s"
 
 
-def format_speedup(baseline: float, current: float) -> str:
-    """Format speedup factor"""
-    if baseline == 0 or current == 0:
-        return "N/A"
-    speedup = baseline / current
-    if speedup > 1:
-        return f"{Colors.GREEN}{speedup:.2f}x faster{Colors.END}"
-    else:
-        return f"{Colors.RED}{1/speedup:.2f}x slower{Colors.END}"
+
 
 
 class ModelComparator:
@@ -112,7 +77,7 @@ class ModelComparator:
         warmup_runs: int = 10
     ) -> BenchmarkResult:
         """Benchmark original PyTorch model"""
-        print(f"{Colors.BLUE}▶ Benchmarking PyTorch (baseline)...{Colors.END}")
+        print_step("Benchmarking PyTorch (baseline)...")
 
         model.eval()
         times = []
@@ -150,7 +115,7 @@ class ModelComparator:
             total_runs=num_runs
         )
 
-        print(f"{Colors.GREEN}✓{Colors.END} Mean latency: {format_latency(result.mean_latency_ms)}")
+        print_success(f"Mean latency: {format_latency(result.mean_latency_ms)}")
         self.results.append(result)
         return result
 
@@ -163,7 +128,7 @@ class ModelComparator:
         warmup_runs: int = 10
     ) -> BenchmarkResult:
         """Benchmark Executorch model"""
-        print(f"{Colors.BLUE}▶ Benchmarking Executorch ({backend_name})...{Colors.END}")
+        print_step(f"Benchmarking Executorch ({backend_name})...")
 
         from executorch.extension.pybindings.portable_lib import _load_for_executorch
 
@@ -189,7 +154,7 @@ class ModelComparator:
                 pass
 
         if not times:
-            print(f"{Colors.RED}✗{Colors.END} All runs failed")
+            print_error("All runs failed")
             return None
 
         times_ms = [t * 1000 for t in times]
@@ -211,14 +176,14 @@ class ModelComparator:
             total_runs=num_runs
         )
 
-        print(f"{Colors.GREEN}✓{Colors.END} Mean latency: {format_latency(result.mean_latency_ms)}")
+        print_success(f"Mean latency: {format_latency(result.mean_latency_ms)}")
         self.results.append(result)
         return result
 
     def print_comparison_table(self):
         """Print comparison table"""
         if not self.results:
-            print(f"{Colors.YELLOW}No results to compare{Colors.END}")
+            print_warning("No results to compare")
             return
 
         print_header("BENCHMARK COMPARISON")
@@ -227,7 +192,15 @@ class ModelComparator:
         columns = ["Backend", "Mean Latency", "Median", "P95", "P99", "Throughput", "Size", "Success Rate"]
         widths = [20, 14, 14, 14, 14, 14, 12, 14]
 
-        print_table_header(columns, widths)
+        header = ""
+        separator = ""
+        for col, width in zip(columns, widths):
+            header += f"{Colors.BOLD}{Colors.CYAN}{col:^{width}}{Colors.END} │ "
+            separator += "─" * width + "─┼─"
+
+        print(header[:-3])
+        print(f"{Colors.CYAN}{separator[:-3]}{Colors.END}")
+
 
         # Find baseline for speedup calculation
         baseline = next((r for r in self.results if "PyTorch" in r.backend), self.results[0])
@@ -249,13 +222,24 @@ class ModelComparator:
                 f"{result.successful_runs}/{result.total_runs}"
             ]
 
-            print_table_row(values, widths, highlight=is_best)
+            row = ""
+            color = Colors.GREEN if is_best else ""
+            for val, width in zip(values, widths):
+                row += f"{color}{val:^{width}}{Colors.END} │ "
+            print(row[:-3])
 
         # Print speedup summary
         print(f"\n{Colors.BOLD}{Colors.HEADER}Performance vs Baseline:{Colors.END}")
         for result in sorted_results:
             if result != baseline:
-                speedup = format_speedup(baseline.mean_latency_ms, result.mean_latency_ms)
+                if baseline.mean_latency_ms == 0 or result.mean_latency_ms == 0:
+                    speedup = "N/A"
+                else:
+                    speedup_val = baseline.mean_latency_ms / result.mean_latency_ms
+                    if speedup_val > 1:
+                        speedup = f"{Colors.GREEN}{speedup_val:.2f}x faster{Colors.END}"
+                    else:
+                        speedup = f"{Colors.RED}{1/speedup_val:.2f}x slower{Colors.END}"
                 print(f"  {result.backend:30s} {speedup}")
 
     def save_results(self, output_path: Path):
@@ -268,7 +252,7 @@ class ModelComparator:
         with open(output_path, 'w') as f:
             json.dump(data, f, indent=2)
 
-        print(f"\n{Colors.GREEN}✓{Colors.END} Results saved to {output_path}")
+        print_success(f"Results saved to {output_path}")
 
     def generate_report(self):
         """Generate a text report"""
@@ -368,7 +352,7 @@ Examples:
 
             comparator.benchmark_pytorch_model(model, input_tensor, args.runs, args.warmup)
         except Exception as e:
-            print(f"{Colors.RED}✗ Failed to load baseline: {e}{Colors.END}")
+            print_error(f"Failed to load baseline: {e}")
 
     # Benchmark Executorch models
     if args.executorch:
@@ -377,7 +361,7 @@ Examples:
         for model_path_str in args.executorch:
             model_path = Path(model_path_str)
             if not model_path.exists():
-                print(f"{Colors.YELLOW}⚠ Skipping {model_path} (not found){Colors.END}")
+                print_warning(f"Skipping {model_path} (not found)")
                 continue
 
             print_header(f"Testing {model_path.name}")
@@ -394,7 +378,7 @@ Examples:
                     model_path, backend, input_tensor, args.runs, args.warmup
                 )
             except Exception as e:
-                print(f"{Colors.RED}✗ Benchmark failed: {e}{Colors.END}")
+                print_error(f"Benchmark failed: {e}")
 
     # Print comparison
     comparator.print_comparison_table()

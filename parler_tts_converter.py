@@ -22,54 +22,16 @@ from transformers import AutoTokenizer
 from parler_tts import ParlerTTSForConditionalGeneration
 
 
-class Colors:
-    """ANSI colors"""
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
-
-
-def print_banner():
-    banner = f"""{Colors.BOLD}{Colors.HEADER}
-╔══════════════════════════════════════════════════════════════════════╗
-║                                                                      ║
-║               PARLERTTS → EXECUTORCH CONVERTER                       ║
-║                    Multi-Component Model Handler                     ║
-║                                                                      ║
-╚══════════════════════════════════════════════════════════════════════╝
-{Colors.END}"""
-    print(banner)
-
-
-def print_section(title: str):
-    print(f"\n{Colors.BOLD}{Colors.CYAN}{'='*70}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.CYAN}{title.center(70)}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.CYAN}{'='*70}{Colors.END}\n")
-
-
-def print_step(msg: str):
-    print(f"{Colors.BLUE}▶{Colors.END} {msg}")
-
-
-def print_success(msg: str):
-    print(f"{Colors.GREEN}✓{Colors.END} {msg}")
-
-
-def print_warning(msg: str):
-    print(f"{Colors.YELLOW}⚠{Colors.END} {msg}")
-
-
-def print_error(msg: str):
-    print(f"{Colors.RED}✗{Colors.END} {msg}")
-
-
-def print_info(key: str, value: str):
-    print(f"  {Colors.CYAN}{key}:{Colors.END} {value}")
+from etorch_utils import (
+    Colors,
+    print_header,
+    print_subheader,
+    print_success,
+    print_warning,
+    print_error,
+    print_info,
+    print_step,
+)
 
 
 class ParlerTTSConverter:
@@ -83,7 +45,7 @@ class ParlerTTSConverter:
 
     def load_model(self):
         """Load ParlerTTS model"""
-        print_section("Loading ParlerTTS Model")
+        print_subheader("Loading ParlerTTS Model")
         print_step(f"Loading from: {self.model_path}")
 
         start = time.time()
@@ -109,7 +71,7 @@ class ParlerTTSConverter:
             print_info("Model Size", f"{model_size_mb:.2f} MB")
 
             # Show component structure
-            print_section("Model Components")
+            print_subheader("Model Components")
             print_step("ParlerTTS Architecture:")
             print(f"  ├── {Colors.CYAN}Text Encoder{Colors.END} (T5-based)")
             print(f"  ├── {Colors.CYAN}Decoder{Colors.END} (Transformer)")
@@ -126,7 +88,7 @@ class ParlerTTSConverter:
 
     def analyze_compatibility(self):
         """Analyze Executorch compatibility"""
-        print_section("Executorch Compatibility Analysis")
+        print_subheader("Executorch Compatibility Analysis")
 
         issues = []
         warnings = []
@@ -141,7 +103,7 @@ class ParlerTTSConverter:
         issues.append("Multi-component architecture requires separate export")
         issues.append("Audio generation involves iterative decoding (not easily exportable)")
 
-        print_section("Analysis Results")
+        print_subheader("Analysis Results")
 
         if issues:
             print(f"{Colors.RED}Issues Found:{Colors.END}")
@@ -157,7 +119,7 @@ class ParlerTTSConverter:
 
     def generate_inference_code(self):
         """Generate PyTorch inference code as a reference"""
-        print_section("Generating Reference Inference Code")
+        print_subheader("Generating Reference Inference Code")
 
         code = '''#!/usr/bin/env python3
 """
@@ -231,7 +193,7 @@ if __name__ == "__main__":
 
     def export_metadata(self):
         """Export model metadata"""
-        print_section("Exporting Metadata")
+        print_subheader("Exporting Metadata")
 
         metadata = {
             "model_path": str(self.model_path),
@@ -268,7 +230,7 @@ if __name__ == "__main__":
 
     def convert(self):
         """Main conversion flow"""
-        print_banner()
+        print_header("PARLERTTS → EXECUTORCH CONVERTER")
 
         if not self.load_model():
             return False
@@ -276,7 +238,7 @@ if __name__ == "__main__":
         compatible = self.analyze_compatibility()
 
         if not compatible:
-            print_section("Conversion Strategy")
+            print_subheader("Conversion Strategy")
             print_warning("Direct Executorch export is not recommended for this model")
             print()
             print(f"{Colors.BOLD}Why ParlerTTS is challenging for Executorch:{Colors.END}")
@@ -295,7 +257,7 @@ if __name__ == "__main__":
         self.generate_inference_code()
         self.export_metadata()
 
-        print_section("Summary")
+        print_subheader("Summary")
         print(f"{Colors.BOLD}What was created:{Colors.END}")
         print(f"  • {Colors.GREEN}Reference inference script{Colors.END} (parler_tts_inference.py)")
         print(f"  • {Colors.GREEN}Model metadata{Colors.END} (parler_tts_metadata.json)")

@@ -10,16 +10,12 @@ from pathlib import Path
 import subprocess
 
 
-class Colors:
-    """ANSI colors"""
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
+from etorch_utils import (
+    Colors,
+    print_header,
+    print_step,
+    print_dim,
+)
 
 
 def print_banner():
@@ -27,31 +23,31 @@ def print_banner():
     banner = f"""{Colors.BOLD}{Colors.CYAN}
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║                                                                          ║
-║   ███████╗██╗  ██╗███████╗ ██████╗██╗   ██╗████████╗ ██████╗ ██████╗   ║
-║   ██╔════╝╚██╗██╔╝██╔════╝██╔════╝██║   ██║╚══██╔══╝██╔═══██╗██╔══██╗  ║
-║   █████╗   ╚███╔╝ █████╗  ██║     ██║   ██║   ██║   ██║   ██║██████╔╝  ║
-║   ██╔══╝   ██╔██╗ ██╔══╝  ██║     ██║   ██║   ██║   ██║   ██║██╔══██╗  ║
-║   ███████╗██╔╝ ██╗███████╗╚██████╗╚██████╔╝   ██║   ╚██████╔╝██║  ██║  ║
-║   ╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝  ╚═╝  ║
+║   ███████╗██╗  ██╗███████╗ ██████╗██╗   ██╗████████╗ ██████╗ ██████╗     ║
+║   ██╔════╝╚██╗██╔╝██╔════╝██╔════╝██║   ██║╚══██╔══╝██╔═══██╗██╔══██╗    ║
+║   █████╗   ╚███╔╝ █████╗  ██║     ██║   ██║   ██║   ██║   ██║██████╔╝    ║
+║   ██╔══╝   ██╔██╗ ██╔══╝  ██║     ██║   ██║   ██║   ██║   ██║██╔══██╗    ║
+║   ███████╗██╔╝ ██╗███████╗╚██████╗╚██████╔╝   ██║   ╚██████╔╝██║  ██║    ║
+║   ╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝  ╚═╝    ║
 ║                                                                          ║
-║                          TOOLKIT v1.0                                   ║
-║                  Convert • Run • Analyze • Compare                      ║
+║                          TOOLKIT v1.0                                    ║
+║                  Convert • Run • Analyze • Compare                       ║
 ║                                                                          ║
 ╚══════════════════════════════════════════════════════════════════════════╝
 {Colors.END}"""
     print(banner)
 
 
-def run_command(cmd: list, description: str):
+def run_command(cmd: list, description: str) -> int:
     """Run a subprocess command"""
-    print(f"\n{Colors.BLUE}▶{Colors.END} {Colors.BOLD}{description}{Colors.END}")
-    print(f"{Colors.DIM}Command: {' '.join(cmd)}{Colors.END}\n")
+    print_step(description)
+    print_dim(f"Command: {' '.join(cmd)}\n")
 
-    result = subprocess.run(cmd)
+    result = subprocess.run(cmd, check=False)
     return result.returncode
 
 
-def convert_model(args):
+def convert_model(args) -> int:
     """Convert model to Executorch"""
     cmd = [
         sys.executable,
@@ -70,7 +66,7 @@ def convert_model(args):
     return run_command(cmd, "Converting model to Executorch")
 
 
-def run_model(args):
+def run_model(args) -> int:
     """Run inference on model"""
     cmd = [
         sys.executable,
@@ -89,7 +85,7 @@ def run_model(args):
     return run_command(cmd, "Running model inference")
 
 
-def analyze_model(args):
+def analyze_model(args) -> int:
     """Analyze model architecture"""
     cmd = [
         sys.executable,
@@ -107,7 +103,7 @@ def analyze_model(args):
     return run_command(cmd, "Analyzing model structure")
 
 
-def compare_models(args):
+def compare_models(args) -> int:
     """Compare model performance"""
     cmd = [
         sys.executable,

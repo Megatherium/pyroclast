@@ -15,43 +15,15 @@ import numpy as np
 import torch
 
 
-class Colors:
-    """ANSI colors"""
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
-
-
-def print_header(text: str):
-    print(f"\n{Colors.BOLD}{Colors.HEADER}{'='*70}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.HEADER}{text.center(70)}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.HEADER}{'='*70}{Colors.END}\n")
-
-
-def print_section(title: str):
-    print(f"\n{Colors.BOLD}{Colors.CYAN}▶ {title}{Colors.END}")
-    print(f"{Colors.CYAN}{'─'*70}{Colors.END}")
-
-
-def print_metric(key: str, value: Any, unit: str = ""):
-    print(f"  {Colors.BLUE}{key}:{Colors.END} {Colors.BOLD}{value}{Colors.END} {unit}")
-
-
-def print_success(msg: str):
-    print(f"{Colors.GREEN}✓{Colors.END} {msg}")
-
-
-def print_warning(msg: str):
-    print(f"{Colors.YELLOW}⚠{Colors.END} {msg}")
-
-
-def print_error(msg: str):
-    print(f"{Colors.RED}✗{Colors.END} {msg}")
+from etorch_utils import (
+    Colors,
+    print_header,
+    print_subheader,
+    print_success,
+    print_warning,
+    print_error,
+    print_info,
+)
 
 
 def check_vulkan_support() -> bool:
@@ -115,7 +87,7 @@ class JITRunner:
 
     def check_backends(self):
         """Check available backends"""
-        print_section("Backend Availability")
+        print_subheader("Backend Availability")
 
         backends = {
             "CPU": True,
@@ -137,14 +109,14 @@ class JITRunner:
             print_warning("Vulkan requested but not available, falling back to CPU")
             self.device = "cpu"
 
-        print_metric("Selected Device", self.device.upper())
+        print_info("Selected Device", self.device.upper())
 
         return backends
 
     def load_model(self):
         """Load TorchScript model"""
-        print_section("Loading TorchScript Model")
-        print_metric("Path", self.model_path)
+        print_subheader("Loading TorchScript Model")
+        print_info("Path", self.model_path)
 
         start_time = time.time()
 
@@ -162,10 +134,10 @@ class JITRunner:
 
             # Print metadata if available
             if self.metadata:
-                print_metric("Method", self.metadata.get("method", "unknown"))
-                print_metric("Optimized", self.metadata.get("optimized", False))
+                print_info("Method", self.metadata.get("method", "unknown"))
+                print_info("Optimized", self.metadata.get("optimized", False))
                 file_size_mb = self.metadata.get("file_size_mb", 0)
-                print_metric("Model Size", f"{file_size_mb:.2f} MB")
+                print_info("Model Size", f"{file_size_mb:.2f} MB")
 
         except Exception as e:
             print_error(f"Failed to load model: {e}")
@@ -201,7 +173,7 @@ class JITRunner:
         warmup_runs: int = 10
     ) -> BenchmarkStats:
         """Benchmark model performance"""
-        print_section(f"Benchmarking ({num_runs} runs, {warmup_runs} warmup)")
+        print_subheader(f"Benchmarking ({num_runs} runs, {warmup_runs} warmup)")
 
         stats = BenchmarkStats()
 
@@ -247,16 +219,16 @@ class JITRunner:
         # Print summary
         summary = stats.summary()
         if summary:
-            print_section("Benchmark Results")
-            print_metric("Successful runs", f"{successful_runs}/{num_runs}")
-            print_metric("Mean latency", f"{summary['mean_ms']:.2f}", "ms")
-            print_metric("Median latency", f"{summary['median_ms']:.2f}", "ms")
-            print_metric("Std deviation", f"{summary['std_ms']:.2f}", "ms")
-            print_metric("Min latency", f"{summary['min_ms']:.2f}", "ms")
-            print_metric("Max latency", f"{summary['max_ms']:.2f}", "ms")
-            print_metric("P95 latency", f"{summary['p95_ms']:.2f}", "ms")
-            print_metric("P99 latency", f"{summary['p99_ms']:.2f}", "ms")
-            print_metric("Throughput", f"{summary['throughput']:.2f}", "inferences/sec")
+            print_subheader("Benchmark Results")
+            print_info("Successful runs", f"{successful_runs}/{num_runs}")
+            print_info("Mean latency", f"{summary['mean_ms']:.2f}", "ms")
+            print_info("Median latency", f"{summary['median_ms']:.2f}", "ms")
+            print_info("Std deviation", f"{summary['std_ms']:.2f}", "ms")
+            print_info("Min latency", f"{summary['min_ms']:.2f}", "ms")
+            print_info("Max latency", f"{summary['max_ms']:.2f}", "ms")
+            print_info("P95 latency", f"{summary['p95_ms']:.2f}", "ms")
+            print_info("P99 latency", f"{summary['p99_ms']:.2f}", "ms")
+            print_info("Throughput", f"{summary['throughput']:.2f}", "inferences/sec")
 
         return stats
 
@@ -278,16 +250,16 @@ class JITRunner:
         if benchmark:
             self.benchmark(num_runs, warmup_runs)
         else:
-            print_section("Running Single Inference")
+            print_subheader("Running Single Inference")
             input_tensor = self.create_dummy_input()
-            print_metric("Input Shape", str(tuple(input_tensor.shape)))
+            print_info("Input Shape", str(tuple(input_tensor.shape)))
 
             start = time.time()
             output = self.run_inference(input_tensor)
             duration = time.time() - start
 
-            print_metric("Output Shape", str(tuple(output.shape)))
-            print_metric("Inference Time", f"{duration*1000:.2f}", "ms")
+            print_info("Output Shape", str(tuple(output.shape)))
+            print_info("Inference Time", f"{duration*1000:.2f}", "ms")
 
         print_header("Complete!")
 

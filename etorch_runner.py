@@ -21,49 +21,15 @@ except ImportError as e:
     EXECUTORCH_AVAILABLE = False
 
 
-class Colors:
-    """ANSI color codes"""
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
-
-
-def print_header(text: str):
-    """Print fancy header"""
-    print(f"\n{Colors.BOLD}{Colors.HEADER}{'='*70}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.HEADER}{text.center(70)}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.HEADER}{'='*70}{Colors.END}\n")
-
-
-def print_section(title: str):
-    """Print section header"""
-    print(f"\n{Colors.BOLD}{Colors.CYAN}▶ {title}{Colors.END}")
-    print(f"{Colors.CYAN}{'─'*70}{Colors.END}")
-
-
-def print_metric(key: str, value: Any, unit: str = ""):
-    """Print a metric"""
-    print(f"  {Colors.BLUE}{key}:{Colors.END} {Colors.BOLD}{value}{Colors.END} {unit}")
-
-
-def print_success(message: str):
-    """Print success message"""
-    print(f"{Colors.GREEN}✓{Colors.END} {message}")
-
-
-def print_warning(message: str):
-    """Print warning message"""
-    print(f"{Colors.YELLOW}⚠{Colors.END} {message}")
-
-
-def print_error(message: str):
-    """Print error message"""
-    print(f"{Colors.RED}✗{Colors.END} {message}", file=sys.stderr)
+from etorch_utils import (
+    Colors,
+    print_header,
+    print_subheader,
+    print_success,
+    print_warning,
+    print_error,
+    print_info,
+)
 
 
 class BenchmarkStats:
@@ -120,8 +86,8 @@ class ExecutorchRunner:
 
     def load_model(self):
         """Load the Executorch model"""
-        print_section("Loading Model")
-        print_metric("Path", self.model_path)
+        print_subheader("Loading Model")
+        print_info("Path", self.model_path)
 
         start_time = time.time()
 
@@ -133,9 +99,9 @@ class ExecutorchRunner:
 
             # Print metadata if available
             if self.metadata:
-                print_metric("Backend", self.metadata.get("backend", "unknown"))
-                print_metric("Parameters", f"{self.metadata.get('param_count', 0):,}")
-                print_metric("Model Size", f"{self.metadata.get('file_size_mb', 0):.2f} MB")
+                print_info("Backend", self.metadata.get("backend", "unknown"))
+                print_info("Parameters", f"{self.metadata.get('param_count', 0):,}")
+                print_info("Model Size", f"{self.metadata.get('file_size_mb', 0):.2f} MB")
 
         except Exception as e:
             print_error(f"Failed to load model: {e}")
@@ -143,7 +109,7 @@ class ExecutorchRunner:
 
     def inspect_model(self):
         """Inspect model structure"""
-        print_section("Model Information")
+        print_subheader("Model Information")
 
         try:
             # Get methods
@@ -156,7 +122,7 @@ class ExecutorchRunner:
                     break
 
             if methods:
-                print_metric("Methods", ", ".join(methods))
+                print_info("Methods", ", ".join(methods))
             else:
                 print_warning("No methods found")
 
@@ -187,7 +153,7 @@ class ExecutorchRunner:
         method_name: str = "forward"
     ) -> BenchmarkStats:
         """Benchmark model performance"""
-        print_section(f"Benchmarking ({num_runs} runs, {warmup_runs} warmup)")
+        print_subheader(f"Benchmarking ({num_runs} runs, {warmup_runs} warmup)")
 
         stats = BenchmarkStats()
 
@@ -220,16 +186,16 @@ class ExecutorchRunner:
         # Print summary
         summary = stats.summary()
         if summary:
-            print_section("Benchmark Results")
-            print_metric("Successful runs", f"{successful_runs}/{num_runs}")
-            print_metric("Mean latency", f"{summary['mean_ms']:.2f}", "ms")
-            print_metric("Median latency", f"{summary['median_ms']:.2f}", "ms")
-            print_metric("Std deviation", f"{summary['std_ms']:.2f}", "ms")
-            print_metric("Min latency", f"{summary['min_ms']:.2f}", "ms")
-            print_metric("Max latency", f"{summary['max_ms']:.2f}", "ms")
-            print_metric("P95 latency", f"{summary['p95_ms']:.2f}", "ms")
-            print_metric("P99 latency", f"{summary['p99_ms']:.2f}", "ms")
-            print_metric("Throughput", f"{summary['throughput']:.2f}", "inferences/sec")
+            print_subheader("Benchmark Results")
+            print_info("Successful runs", f"{successful_runs}/{num_runs}")
+            print_info("Mean latency", f"{summary['mean_ms']:.2f}", "ms")
+            print_info("Median latency", f"{summary['median_ms']:.2f}", "ms")
+            print_info("Std deviation", f"{summary['std_ms']:.2f}", "ms")
+            print_info("Min latency", f"{summary['min_ms']:.2f}", "ms")
+            print_info("Max latency", f"{summary['max_ms']:.2f}", "ms")
+            print_info("P95 latency", f"{summary['p95_ms']:.2f}", "ms")
+            print_info("P99 latency", f"{summary['p99_ms']:.2f}", "ms")
+            print_info("Throughput", f"{summary['throughput']:.2f}", "inferences/sec")
 
         return stats
 

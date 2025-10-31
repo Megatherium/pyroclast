@@ -10,66 +10,32 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Optional, Tuple, Any
+from typing import Any, Tuple
+
 import torch
 import torch.nn as nn
 
-
-class Colors:
-    """ANSI colors"""
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
+from etorch_utils import (
+    Colors,
+    print_error,
+    print_header,
+    print_info,
+    print_step,
+    print_success,
+    print_warning,
+)
 
 
 def print_banner():
-    banner = f"""{Colors.BOLD}{Colors.CYAN}
-╔══════════════════════════════════════════════════════════════════════╗
-║                                                                      ║
-║                    PYTORCH JIT CONVERTER                             ║
-║                  TorchScript Optimization Tool                       ║
-║                                                                      ║
-╚══════════════════════════════════════════════════════════════════════╝
-{Colors.END}"""
-    print(banner)
-
-
-def print_section(title: str):
-    print(f"\n{Colors.BOLD}{Colors.CYAN}{'='*70}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.CYAN}{title.center(70)}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.CYAN}{'='*70}{Colors.END}\n")
-
-
-def print_step(msg: str):
-    print(f"{Colors.BLUE}▶{Colors.END} {msg}")
-
-
-def print_success(msg: str):
-    print(f"{Colors.GREEN}✓{Colors.END} {msg}")
-
-
-def print_warning(msg: str):
-    print(f"{Colors.YELLOW}⚠{Colors.END} {msg}")
-
-
-def print_error(msg: str):
-    print(f"{Colors.RED}✗{Colors.END} {msg}")
-
-
-def print_info(key: str, value: Any):
-    print(f"  {Colors.CYAN}{key}:{Colors.END} {value}")
+    """Prints the main banner."""
+    print_header("PYTORCH JIT CONVERTER\nTorchScript Optimization Tool", width=70)
 
 
 def check_vulkan_support() -> bool:
     """Check if Vulkan backend is available"""
     try:
-        return hasattr(torch.backends, 'vulkan') and torch.backends.vulkan.is_available()
-    except:
+        return hasattr(torch.backends, "vulkan") and torch.backends.vulkan.is_available()
+    except Exception:
         return False
 
 
@@ -82,7 +48,7 @@ class JITConverter:
         output_dir: str,
         method: str = "script",
         optimize: bool = True,
-        verbose: bool = False
+        verbose: bool = False,
     ):
         self.model_path = Path(model_path)
         self.output_dir = Path(output_dir)
@@ -93,7 +59,7 @@ class JITConverter:
 
     def load_model(self):
         """Load PyTorch model"""
-        print_section("Loading PyTorch Model")
+        print_header("Loading PyTorch Model", width=70)
         print_step(f"Loading from: {self.model_path}")
 
         start = time.time()
@@ -110,10 +76,10 @@ class JITConverter:
             try:
                 # Try loading as torch hub model
                 model_name = self.model_path.name
-                self.model = torch.hub.load('pytorch/vision:v0.10.0', model_name, pretrained=True)
+                self.model = torch.hub.load("pytorch/vision:v0.10.0", model_name, pretrained=True)
                 self.tokenizer = None
                 model_type = "TorchHub"
-            except:
+            except Exception:
                 try:
                     # Try loading as saved PyTorch model
                     self.model = torch.load(self.model_path)
@@ -128,9 +94,9 @@ class JITConverter:
 
         # Get model stats
         total_params = sum(p.numel() for p in self.model.parameters())
-        model_size_mb = sum(
-            p.numel() * p.element_size() for p in self.model.parameters()
-        ) / (1024 * 1024)
+        model_size_mb = sum(p.numel() * p.element_size() for p in self.model.parameters()) / (
+            1024 * 1024
+        )
 
         print_success(f"Model loaded in {load_time:.2f}s")
         print_info("Model Type", model_type)
@@ -141,17 +107,21 @@ class JITConverter:
 
     def check_backends(self):
         """Check available backends"""
-        print_section("Backend Availability")
+        print_header("Backend Availability", width=70)
 
         backends = {
             "CPU": True,
             "CUDA": torch.cuda.is_available(),
-            "MPS": torch.backends.mps.is_available() if hasattr(torch.backends, 'mps') else False,
-            "Vulkan": check_vulkan_support()
+            "MPS": torch.backends.mps.is_available() if hasattr(torch.backends, "mps") else False,
+            "Vulkan": check_vulkan_support(),
         }
 
         for backend, available in backends.items():
-            status = f"{Colors.GREEN}✓ Available{Colors.END}" if available else f"{Colors.RED}✗ Not Available{Colors.END}"
+            status = (
+                f"{Colors.GREEN}✓ Available{Colors.END}"
+                if available
+                else f"{Colors.RED}✗ Not Available{Colors.END}"
+            )
             print(f"  {backend:10s} {status}")
 
         if backends["Vulkan"]:
@@ -163,7 +133,7 @@ class JITConverter:
 
     def create_example_inputs(self) -> Tuple:
         """Create example inputs for tracing"""
-        print_section("Creating Example Inputs")
+        print_header("Creating Example Inputs", width=70)
 
         if self.tokenizer:
             # Text model
@@ -182,7 +152,7 @@ class JITConverter:
 
     def convert_to_jit(self, example_inputs: Tuple) -> torch.jit.ScriptModule:
         """Convert model to TorchScript"""
-        print_section(f"Converting to TorchScript ({self.method})")
+        print_header(f"Converting to TorchScript ({self.method})", width=70)
 
         start = time.time()
 
@@ -214,12 +184,13 @@ class JITConverter:
             print_error(f"Conversion failed: {e}")
             if self.verbose:
                 import traceback
+
                 traceback.print_exc()
             raise
 
     def save_model(self, scripted_model: torch.jit.ScriptModule):
         """Save TorchScript model"""
-        print_section("Saving TorchScript Model")
+        print_header("Saving TorchScript Model", width=70)
 
         model_name = self.model_path.name if self.model_path.is_dir() else self.model_path.stem
         output_file = self.output_dir / f"{model_name}_jit.pt"
@@ -248,12 +219,12 @@ class JITConverter:
             "backends_available": {
                 "cpu": True,
                 "cuda": torch.cuda.is_available(),
-                "vulkan": check_vulkan_support()
-            }
+                "vulkan": check_vulkan_support(),
+            },
         }
 
         metadata_file = self.output_dir / f"{model_name}_jit_metadata.json"
-        with open(metadata_file, 'w') as f:
+        with open(metadata_file, "w") as f:
             json.dump(metadata, f, indent=2)
 
         print_success(f"Metadata saved to: {metadata_file}")
@@ -262,7 +233,7 @@ class JITConverter:
 
     def verify_model(self, scripted_model: torch.jit.ScriptModule, example_inputs: Tuple):
         """Verify converted model works"""
-        print_section("Verifying Converted Model")
+        print_header("Verifying Converted Model", width=70)
 
         try:
             print_step("Running inference test...")
@@ -277,7 +248,9 @@ class JITConverter:
             print_success("Inference successful")
 
             # Compare outputs
-            if isinstance(original_output, torch.Tensor) and isinstance(scripted_output, torch.Tensor):
+            if isinstance(original_output, torch.Tensor) and isinstance(
+                scripted_output, torch.Tensor
+            ):
                 diff = torch.abs(original_output - scripted_output).max().item()
                 print_info("Max difference", f"{diff:.6e}")
 
@@ -292,6 +265,7 @@ class JITConverter:
             print_error(f"Verification failed: {e}")
             if self.verbose:
                 import traceback
+
                 traceback.print_exc()
 
     def convert(self):
@@ -317,7 +291,7 @@ class JITConverter:
             # Save
             output_file = self.save_model(scripted_model)
 
-            print_section("Conversion Complete!")
+            print_header("Conversion Complete!", width=70)
             print_success("TorchScript model ready for inference")
             print_info("Output", output_file)
 
@@ -351,38 +325,26 @@ Examples:
 Methods:
   script  - Compiles model code (handles control flow, slower)
   trace   - Traces execution (faster, no dynamic control flow)
-        """
+        """,
+    )
+
+    parser.add_argument("model_path", help="Path to model directory or name (e.g., 'mobilenet_v2')")
+
+    parser.add_argument(
+        "-o", "--output-dir", default="./outputs", help="Output directory (default: ./outputs)"
     )
 
     parser.add_argument(
-        "model_path",
-        help="Path to model directory or name (e.g., 'mobilenet_v2')"
-    )
-
-    parser.add_argument(
-        "-o", "--output-dir",
-        default="./outputs",
-        help="Output directory (default: ./outputs)"
-    )
-
-    parser.add_argument(
-        "-m", "--method",
+        "-m",
+        "--method",
         choices=["script", "trace"],
         default="trace",
-        help="Conversion method (default: trace)"
+        help="Conversion method (default: trace)",
     )
 
-    parser.add_argument(
-        "--no-optimize",
-        action="store_true",
-        help="Disable optimization"
-    )
+    parser.add_argument("--no-optimize", action="store_true", help="Disable optimization")
 
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Verbose output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 
@@ -391,7 +353,7 @@ Methods:
         output_dir=args.output_dir,
         method=args.method,
         optimize=not args.no_optimize,
-        verbose=args.verbose
+        verbose=args.verbose,
     )
 
     try:

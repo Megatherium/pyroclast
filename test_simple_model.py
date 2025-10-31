@@ -7,6 +7,14 @@ import torch
 import torch.nn as nn
 from pathlib import Path
 import sys
+from etorch_utils import (
+    print_header,
+    print_step,
+    print_success,
+    print_error,
+    print_info,
+    format_bytes,
+)
 
 try:
     from executorch.exir import to_edge, ExecutorchBackendConfig
@@ -18,45 +26,43 @@ except ImportError as e:
 
 
 def test_simple_model():
-    print("="*60)
-    print(" Testing Executorch with MobileNetV2")
-    print("="*60)
+    print_header("Testing Executorch with MobileNetV2", width=60)
 
     # Load a simple pre-trained model
-    print("\n[1/5] Loading MobileNetV2...")
+    print_step("[1/5] Loading MobileNetV2...")
     model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
     model.eval()
-    print("✓ Model loaded")
+    print_success("Model loaded")
 
     # Create example input
-    print("\n[2/5] Creating example input...")
     example_input = (torch.randn(1, 3, 224, 224),)
-    print(f"✓ Input shape: {example_input[0].shape}")
+    print_step("[2/5] Creating example input...")
+    print_info("Input shape", example_input[0].shape)
 
     # Export to EXIR
-    print("\n[3/5] Exporting to EXIR...")
+    print_step("[3/5] Exporting to EXIR...")
     with torch.no_grad():
         try:
             exported_program = export(model, example_input)
-            print("✓ Export successful")
+            print_success("Export successful")
         except Exception as e:
-            print(f"✗ Export failed: {e}")
+            print_error(f"Export failed: {e}")
             return False
 
     # Convert to Edge dialect
-    print("\n[4/5] Converting to Edge dialect...")
+    print_step("[4/5] Converting to Edge dialect...")
     try:
         edge_program = to_edge(exported_program)
-        print("✓ Edge conversion successful")
+        print_success("Edge conversion successful")
     except Exception as e:
-        print(f"✗ Edge conversion failed: {e}")
+        print_error(f"Edge conversion failed: {e}")
         return False
 
     # Generate Executorch program
-    print("\n[5/5] Generating Executorch program...")
+    print_step("[5/5] Generating Executorch program...")
     try:
         exec_program = edge_program.to_executorch()
-        print("✓ Executorch program generated")
+        print_success("Executorch program generated")
 
         # Save
         output_path = Path("outputs/mobilenet_v2_test.pte")
@@ -65,13 +71,14 @@ def test_simple_model():
         with open(output_path, "wb") as f:
             f.write(exec_program.buffer)
 
-        file_size_mb = len(exec_program.buffer) / (1024 * 1024)
-        print(f"✓ Saved to {output_path} ({file_size_mb:.2f} MB)")
+        file_size = len(exec_program.buffer)
+        print_success(f"Saved to {output_path}")
+        print_info("File size", format_bytes(file_size))
 
         return True
 
     except Exception as e:
-        print(f"✗ Executorch generation failed: {e}")
+        print_error(f"Executorch generation failed: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -79,7 +86,7 @@ def test_simple_model():
 
 if __name__ == "__main__":
     if not EXEC_OK:
-        print("Executorch imports failed!")
+        print_error("Executorch imports failed!")
         sys.exit(1)
 
     success = test_simple_model()

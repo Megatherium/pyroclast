@@ -18,54 +18,16 @@ from pydub import AudioSegment
 import numpy as np
 
 
-class Colors:
-    """ANSI colors"""
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
-
-
-def print_banner():
-    banner = f"""{Colors.BOLD}{Colors.HEADER}
-╔══════════════════════════════════════════════════════════════════════╗
-║                                                                      ║
-║                      PARLERTTS JIT TOOL                              ║
-║                   Text-to-Speech with JIT                            ║
-║                                                                      ║
-╚══════════════════════════════════════════════════════════════════════╝
-{Colors.END}"""
-    print(banner)
-
-
-def print_section(title: str):
-    print(f"\n{Colors.BOLD}{Colors.CYAN}{'='*70}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.CYAN}{title.center(70)}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.CYAN}{'='*70}{Colors.END}\n")
-
-
-def print_step(msg: str):
-    print(f"{Colors.BLUE}▶{Colors.END} {msg}")
-
-
-def print_success(msg: str):
-    print(f"{Colors.GREEN}✓{Colors.END} {msg}")
-
-
-def print_warning(msg: str):
-    print(f"{Colors.YELLOW}⚠{Colors.END} {msg}")
-
-
-def print_error(msg: str):
-    print(f"{Colors.RED}✗{Colors.END} {msg}")
-
-
-def print_info(key: str, value: str):
-    print(f"  {Colors.CYAN}{key}:{Colors.END} {value}")
+from etorch_utils import (
+    Colors,
+    print_header,
+    print_subheader,
+    print_success,
+    print_warning,
+    print_error,
+    print_info,
+    print_step,
+)
 
 
 def convert_audio_format(
@@ -145,7 +107,7 @@ class ParlerTTSJIT:
 
     def load_model(self):
         """Load ParlerTTS model"""
-        print_section("Loading ParlerTTS Model")
+        print_subheader("Loading ParlerTTS Model")
         print_step(f"Loading from: {self.model_path}")
 
         start = time.time()
@@ -196,7 +158,7 @@ class ParlerTTSJIT:
         if self.model is None:
             raise RuntimeError("Model not loaded")
 
-        print_section("Generating Speech")
+        print_subheader("Generating Speech")
         print_info("Text", text[:100] + ("..." if len(text) > 100 else ""))
         print_info("Description", description[:100])
 
@@ -265,7 +227,7 @@ class ParlerTTSJIT:
                 print_warning(f"Failed to convert to {fmt}: {e}")
 
         # Print summary
-        print_section("Output Files")
+        print_subheader("Output Files")
         for fmt, path in output_files.items():
             size_kb = path.stat().st_size / 1024
             print(f"  {Colors.CYAN}{fmt.upper():6s}{Colors.END} {path} ({size_kb:.1f} KB)")
@@ -349,7 +311,7 @@ Examples:
 
     args = parser.parse_args()
 
-    print_banner()
+    print_header("PARLERTTS JIT TOOL")
 
     try:
         tts = ParlerTTSJIT(
@@ -368,7 +330,7 @@ Examples:
             output_formats=args.formats
         )
 
-        print_section("Complete!")
+        print_subheader("Complete!")
         print_success("Speech generation successful")
 
         sys.exit(0)

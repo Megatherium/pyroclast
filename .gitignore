@@ -1,10 +1,19 @@
-/models/*
+# Project
 /outputs/*
 !/outputs/.gitkeep
+/models/*
 !/models/.gitkeep
-CLAUDE.md
-.gemini/
 /cache/*
 !/cache/.gitkeep
+
+# AI
+/.claude
+/.gemini
+CLAUDE.md
+GEMINI.md
+
+# Misc
+/__pycache__
+/.mypy_cache
 /workshop
 

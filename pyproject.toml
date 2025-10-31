@@ -57,6 +57,8 @@ dev = [
     "black>=23.0.0",
     "ruff>=0.0.270",
     "mypy>=1.0.0",
+    "pylint>=3.0.0",
+    "pre-commit>=4.0.0",
 ]
 
 # CUDA support (for GPU acceleration)
@@ -113,6 +115,8 @@ dev-dependencies = [
     "pytest>=7.0.0",
     "black>=23.0.0",
     "ruff>=0.0.270",
+    "pylint>=3.0.0",
+    "pre-commit>=4.0.0",
 ]
 
 [tool.black]
