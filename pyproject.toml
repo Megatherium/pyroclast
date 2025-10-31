@@ -1,0 +1,176 @@
+[project]
+name = "executorch-toolkit"
+version = "1.0.0"
+description = "Comprehensive toolkit for PyTorch model conversion, inference, and benchmarking with Executorch and JIT support"
+authors = [
+    {name = "Horst", email = "horst@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+keywords = ["pytorch", "executorch", "jit", "torchscript", "ml", "inference", "tts", "parler-tts"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    # Core ML frameworks
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "torchaudio>=2.0.0",
+
+    # Executorch
+    "executorch>=0.7.0",
+    "torchao>=0.12.0",
+
+    # HuggingFace ecosystem
+    "transformers>=4.30.0",
+    "accelerate>=0.20.0",
+    "optimum>=1.12.0",
+    "sentencepiece>=0.1.99",
+    "tokenizers>=0.13.0",
+    "safetensors>=0.3.0",
+
+    # ParlerTTS and audio
+    "parler-tts>=0.2.0",
+    "soundfile>=0.12.0",
+    "pydub>=0.25.0",
+
+    # Utilities
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "tqdm>=4.65.0",
+]
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.0.270",
+    "mypy>=1.0.0",
+]
+
+# CUDA support (for GPU acceleration)
+cuda = [
+    "torch[cuda]>=2.0.0",
+]
+
+# Full audio processing
+audio = [
+    "librosa>=0.10.0",
+    "audioread>=3.0.0",
+    "pystoi>=0.4.0",
+]
+
+# Documentation
+docs = [
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+    "myst-parser>=1.0.0",
+]
+
+# All extras
+all = [
+    "executorch-toolkit[dev,audio,docs]",
+]
+
+[project.urls]
+Homepage = "https://github.com/horst/executorch-toolkit"
+Documentation = "https://github.com/horst/executorch-toolkit/blob/main/README.md"
+Repository = "https://github.com/horst/executorch-toolkit"
+"Bug Tracker" = "https://github.com/horst/executorch-toolkit/issues"
+
+[project.scripts]
+# Command-line entry points
+etorch = "etorch:main"
+etorch-convert = "etorch_converter:main"
+etorch-run = "etorch_runner:main"
+etorch-compare = "etorch_compare:main"
+etorch-analyze = "model_analyzer:main"
+jit-convert = "jit_converter:main"
+jit-run = "jit_runner:main"
+parler-tts = "parler_tts_jit:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.uv]
+# UV-specific configuration
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "ruff>=0.0.270",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Set to true for stricter typing
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers"
+testpaths = [
+    "tests",
+]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# UV lock file settings
+[tool.uv.sources]
+# If you want to use local/editable installs for development
+# executorch = { path = "/tmp/executorch", editable = true }

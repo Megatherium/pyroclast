@@ -1,0 +1,10 @@
+/models/*
+/outputs/*
+!/outputs/.gitkeep
+!/models/.gitkeep
+CLAUDE.md
+.gemini/
+/cache/*
+!/cache/.gitkeep
+/workshop
+
