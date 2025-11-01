@@ -133,6 +133,23 @@ def compare_models(args) -> int:
     return run_command(cmd, "Comparing model performance")
 
 
+def doctor_check(args) -> int:
+    """Check model health and compatibility"""
+    cmd = [
+        sys.executable,
+        "etorch_doctor.py",
+        args.model_path,
+    ]
+
+    if args.save_report:
+        cmd.extend(["--save-report", args.save_report])
+
+    if args.verbose:
+        cmd.append("-v")
+
+    return run_command(cmd, "Diagnosing model health")
+
+
 def optimize_model(args) -> int:
     """Auto-optimize model by testing all backends"""
     cmd = [
@@ -169,6 +186,9 @@ def main():
   # Analyze model architecture
   %(prog)s analyze models/eclipse_code --max-depth 4
 
+  # Check model health
+  %(prog)s doctor models/my_model --save-report outputs/report.json
+
   # Compare PyTorch vs Executorch
   %(prog)s compare --baseline mobilenet_v2 --executorch outputs/*.pte
 
@@ -179,6 +199,7 @@ def main():
   convert    Convert HuggingFace/PyTorch model to Executorch format
   run        Run inference on Executorch model
   analyze    Analyze model architecture and parameters
+  doctor     Check model health and compatibility issues
   compare    Compare performance across backends
   optimize   Auto-optimize model by testing all backends
 
@@ -220,6 +241,13 @@ def main():
     analyze_parser.add_argument("--save-report", action="store_true", help="Save JSON report")
     analyze_parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     analyze_parser.set_defaults(func=analyze_model)
+
+    # Doctor command
+    doctor_parser = subparsers.add_parser("doctor", help="Check model health and compatibility")
+    doctor_parser.add_argument("model_path", help="Path to model")
+    doctor_parser.add_argument("--save-report", help="Save diagnostic report to JSON file")
+    doctor_parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+    doctor_parser.set_defaults(func=doctor_check)
 
     # Compare command
     compare_parser = subparsers.add_parser("compare", help="Compare model performance")
