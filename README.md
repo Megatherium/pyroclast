@@ -1,6 +1,6 @@
-# Executorch Toolkit
+# Pyroclast
 
-A comprehensive toolkit for converting, running, analyzing, and benchmarking PyTorch models with Executorch. Built specifically to handle complex models like ParlerTTS with support for multiple backends.
+A comprehensive toolkit for converting, running, analyzing, optimizing, and deploying PyTorch models with Executorch. Built specifically to handle complex models like ParlerTTS with support for multiple backends.
 
 ## 🚀 Features
 
@@ -11,6 +11,10 @@ A comprehensive toolkit for converting, running, analyzing, and benchmarking PyT
 - **Performance Benchmarking**: Compare performance across backends and models
 - **Model Analysis**: Deep inspection of model architecture and parameters
 - **Beautiful CLI**: Unified command-line interface with colored output
+- **Health Diagnostics**: Check model compatibility and get optimization suggestions
+- **Deployment Generator**: Production-ready code for FastAPI, Docker, Lambda, Streamlit
+- **Batch Testing**: Regression testing with JSON test suites
+- **Watch Mode**: Auto-reconvert on file changes for iterative development
 - **Comprehensive Reporting**: JSON export of benchmarks and analysis
 
 ## 📦 Installation
@@ -186,6 +190,83 @@ Backend      Latency      Throughput      Size       Status
   vulkan      N/A          N/A            N/A        ✗ Convert
 
 Winner: XNNPACK (15.2x faster than portable)
+
+### 6. Deploy Model
+
+Generate production-ready deployment code:
+
+```bash
+# FastAPI REST API server
+python3 pyroclast.py deploy outputs/model.pte -t fastapi
+
+# Docker container
+python3 pyroclast.py deploy outputs/model.pte -t docker -o ./my-service
+
+# AWS Lambda function
+python3 pyroclast.py deploy outputs/model.pte -t lambda
+
+# Streamlit web app
+python3 pyroclast.py deploy outputs/model.pte -t streamlit
+```
+
+The deploy command generates:
+- Complete application code with dependencies
+- Dockerfile (for Docker/FastAPI templates)
+- README with deployment instructions
+- Production-ready error handling
+- Health check endpoints (FastAPI)
+- Batch prediction support (FastAPI)
+
+### 7. Batch Testing
+
+Run regression tests from a JSON file:
+
+```bash
+# Run test suite
+python3 pyroclast.py batch-test outputs/model.pte tests.json
+
+# Save results to file
+python3 pyroclast.py batch-test outputs/model.pte tests.json -o results.json
+
+# Verbose mode
+python3 pyroclast.py batch-test outputs/model.pte tests.json -v
+```
+
+**Test File Format:**
+```json
+{
+  "tests": [
+    {
+      "name": "Test case 1",
+      "inputs": [[1.0, 2.0, 3.0]],
+      "input_shape": [1, 3],
+      "expected_output": [[0.5, 0.3, 0.2]],
+      "expected_shape": [1, 3],
+      "tolerance": 1e-5
+    }
+  ]
+}
+```
+
+Perfect for CI/CD pipelines - exits with code 1 if any tests fail.
+
+### 8. Watch Mode
+
+Auto-reconvert models on file changes:
+
+```bash
+# Watch model directory
+python3 pyroclast.py watch models/my_model
+
+# With specific backend
+python3 pyroclast.py watch models/my_model -b xnnpack
+
+# Custom polling interval
+python3 pyroclast.py watch models/my_model --interval 1.0 -v
+```
+
+Great for iterative development - automatically reconverts when you save changes to model files.
+
 ```
 
 ## 🛠️ Individual Tools
