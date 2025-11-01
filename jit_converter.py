@@ -10,7 +10,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 
 import torch
 import torch.nn as nn
@@ -23,6 +23,9 @@ from etorch_utils import (
     print_step,
     print_success,
     print_warning,
+    load_input_file,
+    validate_input_spec,
+    InputSpec,
 )
 
 
@@ -49,12 +52,18 @@ class JITConverter:
         method: str = "script",
         optimize: bool = True,
         verbose: bool = False,
+        input_file: Optional[str] = None,
+        description: Optional[str] = None,
+        prompt: Optional[str] = None,
     ):
         self.model_path = Path(model_path)
         self.output_dir = Path(output_dir)
         self.method = method
         self.optimize = optimize
         self.verbose = verbose
+        self.input_file = input_file
+        self.description = description
+        self.prompt = prompt
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def load_model(self):
@@ -135,20 +144,46 @@ class JITConverter:
         """Create example inputs for tracing"""
         print_header("Creating Example Inputs", width=70)
 
+        # Load inputs from file or CLI args or use defaults
+        input_spec = self._get_input_spec()
+
         if self.tokenizer:
             # Text model
-            text = "This is a test input for model tracing"
+            text = (
+                input_spec.prompt
+                or input_spec.description
+                or "This is a test input for model tracing"
+            )
+            print_info("Input Text", f'"{text}"')
+
             inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True)
             example_inputs = tuple(inputs.values())
             print_info("Input Type", "Text (tokenized)")
             print_info("Input Shape", str([t.shape for t in example_inputs]))
         else:
-            # Assume vision model
+            # Assume vision model (no custom input support for vision yet)
             example_inputs = (torch.randn(1, 3, 224, 224),)
             print_info("Input Type", "Image (224x224)")
             print_info("Input Shape", str(example_inputs[0].shape))
 
         return example_inputs
+
+    def _get_input_spec(self) -> InputSpec:
+        """Get input specification from file or CLI args"""
+        # Priority: input_file > CLI args > defaults
+        if self.input_file:
+            try:
+                spec = load_input_file(self.input_file)
+                if isinstance(spec, list):
+                    print_warning(f"Batch input file detected, using first input only")
+                    spec = spec[0]
+                return spec
+            except Exception as e:
+                print_error(f"Failed to load input file: {e}")
+                raise
+
+        # Use CLI args if provided
+        return InputSpec(description=self.description, prompt=self.prompt)
 
     def convert_to_jit(self, example_inputs: Tuple) -> torch.jit.ScriptModule:
         """Convert model to TorchScript"""
@@ -346,6 +381,15 @@ Methods:
 
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
+    # Input specification options
+    input_group = parser.add_argument_group("input specification")
+    input_group.add_argument(
+        "--input-file",
+        help="JSON file containing input specification (description, prompt, metadata)",
+    )
+    input_group.add_argument("--description", help="Description text for model input")
+    input_group.add_argument("--prompt", help="Prompt text for model input")
+
     args = parser.parse_args()
 
     converter = JITConverter(
@@ -354,6 +398,9 @@ Methods:
         method=args.method,
         optimize=not args.no_optimize,
         verbose=args.verbose,
+        input_file=args.input_file,
+        description=args.description,
+        prompt=args.prompt,
     )
 
     try:

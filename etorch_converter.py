@@ -22,6 +22,7 @@ try:
     from executorch.exir.backend.backend_api import to_backend
     from torch.export import export
     from executorch.exir import EdgeCompileConfig, ExecutorchBackendConfig
+
     EXECUTORCH_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Executorch not fully available: {e}")
@@ -37,6 +38,9 @@ from etorch_utils import (
     print_error,
     print_info,
     print_step,
+    load_input_file,
+    validate_input_spec,
+    InputSpec,
 )
 
 
@@ -61,13 +65,19 @@ class ExecutorchConverter:
         output_dir: str,
         backend: str = "xnnpack",
         quantize: bool = False,
-        verbose: bool = False
+        verbose: bool = False,
+        input_file: Optional[str] = None,
+        description: Optional[str] = None,
+        prompt: Optional[str] = None,
     ):
         self.model_path = Path(model_path)
         self.output_dir = Path(output_dir)
         self.backend = backend
         self.quantize = quantize
         self.verbose = verbose
+        self.input_file = input_file
+        self.description = description
+        self.prompt = prompt
         self.model_info = ModelInfo()
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -84,18 +94,15 @@ class ExecutorchConverter:
         if config_path.exists():
             with open(config_path) as f:
                 config = json.load(f)
-                self.model_info.model_type = config.get(
-                    "model_type", "unknown")
-                self.model_info.architecture = config.get(
-                    "architectures", ["unknown"])[0]
+                self.model_info.model_type = config.get("model_type", "unknown")
+                self.model_info.architecture = config.get("architectures", ["unknown"])[0]
 
         # Load model based on type
         try:
             if self.model_info.model_type == "parler_tts":
                 print_info("Model Type", "ParlerTTS (Text-to-Speech)")
                 model = ParlerTTSForConditionalGeneration.from_pretrained(
-                    str(self.model_path),
-                    torch_dtype=torch.float32
+                    str(self.model_path), torch_dtype=torch.float32
                 )
                 tokenizer = AutoTokenizer.from_pretrained(str(self.model_path))
             else:
@@ -109,8 +116,7 @@ class ExecutorchConverter:
         model.eval()
 
         # Calculate model statistics
-        self.model_info.param_count = sum(
-            p.numel() for p in model.parameters())
+        self.model_info.param_count = sum(p.numel() for p in model.parameters())
         self.model_info.model_size_mb = sum(
             p.numel() * p.element_size() for p in model.parameters()
         ) / (1024 * 1024)
@@ -128,11 +134,7 @@ class ExecutorchConverter:
         """Analyze model structure"""
         print_subheader("Analyzing Model Structure")
 
-        analysis = {
-            "modules": {},
-            "layers": 0,
-            "parameters_by_layer": {}
-        }
+        analysis = {"modules": {}, "layers": 0, "parameters_by_layer": {}}
 
         # Count different module types
         for name, module in model.named_modules():
@@ -146,11 +148,7 @@ class ExecutorchConverter:
 
         # Show top module types
         print_step("Module Breakdown:")
-        sorted_modules = sorted(
-            analysis["modules"].items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:10]
+        sorted_modules = sorted(analysis["modules"].items(), key=lambda x: x[1], reverse=True)[:10]
 
         for module_type, count in sorted_modules:
             print(f"  • {module_type}: {count}")
@@ -161,10 +159,16 @@ class ExecutorchConverter:
         """Create example inputs for export"""
         print_subheader("Preparing Example Inputs")
 
+        # Load inputs from file or CLI args or use defaults
+        input_spec = self._get_input_spec()
+
         if self.model_info.model_type == "parler_tts":
             # ParlerTTS requires two text inputs
-            description = "A female speaker with a clear voice"
-            prompt = "Hello world"
+            description = input_spec.description or "A female speaker with a clear voice"
+            prompt = input_spec.prompt or "Hello world"
+
+            print_info("Description", f'"{description}"')
+            print_info("Prompt", f'"{prompt}"')
 
             input_ids = tokenizer(description, return_tensors="pt").input_ids
             prompt_input_ids = tokenizer(prompt, return_tensors="pt").input_ids
@@ -175,15 +179,30 @@ class ExecutorchConverter:
             return (input_ids, prompt_input_ids)
         else:
             # Generic transformer input
-            text = "This is a test input"
+            text = input_spec.prompt or input_spec.description or "This is a test input"
+            print_info("Input text", f'"{text}"')
+
             inputs = tokenizer(text, return_tensors="pt")
             return tuple(inputs.values())
 
-    def export_to_executorch(
-        self,
-        model: torch.nn.Module,
-        example_inputs: Tuple
-    ) -> bytes:
+    def _get_input_spec(self) -> InputSpec:
+        """Get input specification from file or CLI args"""
+        # Priority: input_file > CLI args > defaults
+        if self.input_file:
+            try:
+                spec = load_input_file(self.input_file)
+                if isinstance(spec, list):
+                    print_warning(f"Batch input file detected, using first input only")
+                    spec = spec[0]
+                return spec
+            except Exception as e:
+                print_error(f"Failed to load input file: {e}")
+                raise
+
+        # Use CLI args if provided
+        return InputSpec(description=self.description, prompt=self.prompt)
+
+    def export_to_executorch(self, model: torch.nn.Module, example_inputs: Tuple) -> bytes:
         """Export model to Executorch format"""
         print_subheader(f"Exporting to Executorch ({self.backend})")
 
@@ -205,8 +224,7 @@ class ExecutorchConverter:
             edge_config = EdgeCompileConfig(
                 _check_ir_validity=False,  # May need to disable for complex models
             )
-            edge_program = to_edge(
-                exported_program, compile_config=edge_config)
+            edge_program = to_edge(exported_program, compile_config=edge_config)
             print_success("Edge dialect generated")
 
             # Step 3: Apply backend-specific optimizations
@@ -214,16 +232,21 @@ class ExecutorchConverter:
 
             if self.backend == "xnnpack":
                 try:
-                    from executorch.backends.xnnpack.partition.xnnpack_partitioner import XnnpackPartitioner
-                    edge_program = edge_program.to_backend(
-                        XnnpackPartitioner())
+                    from executorch.backends.xnnpack.partition.xnnpack_partitioner import (
+                        XnnpackPartitioner,
+                    )
+
+                    edge_program = edge_program.to_backend(XnnpackPartitioner())
                     print_success("XNNPACK partitioner applied")
                 except Exception as e:
                     print_error(f"XNNPACK optimization failed: {e}")
                     print_info("Note", "Continuing with portable backend")
             elif self.backend == "vulkan":
                 try:
-                    from executorch.backends.vulkan.partitioner.vulkan_partitioner import VulkanPartitioner
+                    from executorch.backends.vulkan.partitioner.vulkan_partitioner import (
+                        VulkanPartitioner,
+                    )
+
                     edge_program = edge_program.to_backend(VulkanPartitioner())
                     print_success("Vulkan partitioner applied")
                 except Exception as e:
@@ -247,6 +270,7 @@ class ExecutorchConverter:
             print_error(f"Export failed: {e}")
             if self.verbose:
                 import traceback
+
                 traceback.print_exc()
             raise
 
@@ -266,16 +290,17 @@ class ExecutorchConverter:
         print_success(f"Model saved ({file_size_mb:.2f} MB)")
 
         # Save metadata
-        metadata_file = self.output_dir / \
-            f"{model_name}_{self.backend}_metadata.json"
-        metadata.update({
-            "model_path": str(self.model_path),
-            "backend": self.backend,
-            "output_file": str(output_file),
-            "file_size_mb": file_size_mb,
-            "param_count": self.model_info.param_count,
-            "original_size_mb": self.model_info.model_size_mb,
-        })
+        metadata_file = self.output_dir / f"{model_name}_{self.backend}_metadata.json"
+        metadata.update(
+            {
+                "model_path": str(self.model_path),
+                "backend": self.backend,
+                "output_file": str(output_file),
+                "file_size_mb": file_size_mb,
+                "param_count": self.model_info.param_count,
+                "original_size_mb": self.model_info.model_size_mb,
+            }
+        )
 
         print_step(f"Writing metadata to: {metadata_file}")
         with open(metadata_file, "w") as f:
@@ -320,7 +345,7 @@ class ExecutorchConverter:
 
 
 def main():
-    """ Parses CLI arguments and calls the converter """
+    """Parses CLI arguments and calls the converter"""
     parser = argparse.ArgumentParser(
         description="Convert HuggingFace models to Executorch format",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -334,38 +359,42 @@ Examples:
 
   # Enable verbose output
   %(prog)s models/eclipse_code -o outputs/ -v
-        """
+        """,
     )
 
-    parser.add_argument(
-        "model_path",
-        help="Path to HuggingFace model directory"
-    )
+    parser.add_argument("model_path", help="Path to HuggingFace model directory")
 
     parser.add_argument(
-        "-o", "--output-dir",
+        "-o",
+        "--output-dir",
         default="./outputs",
-        help="Output directory for converted model (default: ./outputs)"
+        help="Output directory for converted model (default: ./outputs)",
     )
 
     parser.add_argument(
-        "-b", "--backend",
+        "-b",
+        "--backend",
         choices=["xnnpack", "vulkan", "portable"],
         default="xnnpack",
-        help="Target backend (default: xnnpack for CPU)"
+        help="Target backend (default: xnnpack for CPU)",
     )
 
     parser.add_argument(
-        "-q", "--quantize",
-        action="store_true",
-        help="Apply quantization (reduces model size)"
+        "-q", "--quantize", action="store_true", help="Apply quantization (reduces model size)"
     )
 
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Enable verbose output"
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+
+    # Input specification options
+    input_group = parser.add_argument_group("input specification")
+    input_group.add_argument(
+        "--input-file",
+        help="JSON file containing input specification (description, prompt, metadata)",
     )
+    input_group.add_argument(
+        "--description", help="Description text (for ParlerTTS voice description or model input)"
+    )
+    input_group.add_argument("--prompt", help="Prompt text (for ParlerTTS text or model input)")
 
     args = parser.parse_args()
 
@@ -374,7 +403,10 @@ Examples:
         output_dir=args.output_dir,
         backend=args.backend,
         quantize=args.quantize,
-        verbose=args.verbose
+        verbose=args.verbose,
+        input_file=args.input_file,
+        description=args.description,
+        prompt=args.prompt,
     )
 
     try:
