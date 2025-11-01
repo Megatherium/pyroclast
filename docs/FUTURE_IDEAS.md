@@ -6,7 +6,7 @@
 ## 🎯 Active Development (Tonight's Mission)
 
 ### ✅ Completed
-- [ ] JSON input file support for converters
+- [x] JSON input file support for converters ✓ (feat/input-file-support)
 - [ ] `etorch optimize --auto` - Auto-backend selector
 - [ ] `etorch doctor` - Health check & diagnostics tool
 
