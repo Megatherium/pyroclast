@@ -8,6 +8,7 @@ from .analyzer import ModelAnalyzer
 from .comparator import ModelComparator
 from .optimizer import AutoOptimizer, BackendResult
 from .doctor import ModelDoctor, Issue, Suggestion
+from .deployer import DeploymentGenerator
 
 __all__ = [
     "ExecutorchConverter",
@@ -20,6 +21,7 @@ __all__ = [
     "AutoOptimizer",
     "BackendResult",
     "ModelDoctor",
+    "DeploymentGenerator",
     "Issue",
     "Suggestion",
 ]

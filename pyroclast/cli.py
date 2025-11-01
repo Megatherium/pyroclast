@@ -253,6 +253,46 @@ def optimize(model_path, output_dir, backends, runs, verbose):
         sys.exit(1)
 
 
+@cli.command()
+@click.argument("model_path", type=click.Path(exists=True))
+@click.option("-o", "--output-dir", default="./deployment", help="Output directory")
+@click.option(
+    "-t",
+    "--template",
+    type=click.Choice(["fastapi", "docker", "lambda", "streamlit"]),
+    default="fastapi",
+    help="Deployment template",
+)
+@click.option("-p", "--port", default=8000, help="Server port (for FastAPI/Docker)")
+@click.option("-v", "--verbose", is_flag=True, help="Verbose output")
+def deploy(model_path, output_dir, template, port, verbose):
+    """Generate production-ready deployment code."""
+    from pyroclast.core import DeploymentGenerator
+
+    generator = DeploymentGenerator(
+        model_path=model_path,
+        output_dir=output_dir,
+        template=template,
+        port=port,
+        verbose=verbose,
+    )
+
+    try:
+        output_path = generator.generate()
+        click.echo(f"\n✓ Deployment code generated!")
+        click.echo(f"   Location: {output_path}")
+        click.echo(f"   Template: {template}")
+        click.echo(f"\nCheck README.md in the output directory for instructions.")
+        sys.exit(0)
+    except Exception as e:
+        click.echo(f"✗ Error: {e}", err=True)
+        if verbose:
+            import traceback
+
+            traceback.print_exc()
+        sys.exit(1)
+
+
 # JIT commands group
 @cli.group()
 def jit():
