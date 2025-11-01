@@ -16,7 +16,7 @@ pyenv activate torch
 ### 2. Try the Master CLI
 
 ```bash
-python3 etorch.py
+python3 pyroclast.py
 ```
 
 You'll see a beautiful banner and help menu!
@@ -28,10 +28,10 @@ You'll see a beautiful banner and help menu!
 python3 test_simple_model.py
 
 # Run benchmarks on converted model
-python3 etorch.py run outputs/mobilenet_v2_test.pte --benchmark --runs 50
+python3 pyroclast.py run outputs/mobilenet_v2_test.pte --benchmark --runs 50
 
 # Compare performance
-python3 etorch.py compare --baseline mobilenet_v2 --executorch outputs/mobilenet_v2_test.pte
+python3 pyroclast.py compare --baseline mobilenet_v2 --executorch outputs/mobilenet_v2_test.pte
 ```
 
 ### 4. Try ParlerTTS Analysis
@@ -49,25 +49,25 @@ python3 parler_tts_converter.py models/eclipse_code -o outputs/
 ### Convert a Model
 
 ```bash
-python3 etorch.py convert models/my_model -o outputs/ --backend xnnpack
+python3 pyroclast.py convert models/my_model -o outputs/ --backend xnnpack
 ```
 
 ### Run Inference
 
 ```bash
-python3 etorch.py run outputs/model.pte --benchmark --runs 100
+python3 pyroclast.py run outputs/model.pte --benchmark --runs 100
 ```
 
 ### Analyze Model
 
 ```bash
-python3 etorch.py analyze models/my_model --max-depth 4
+python3 pyroclast.py analyze models/my_model --max-depth 4
 ```
 
 ### Compare Performance
 
 ```bash
-python3 etorch.py compare \\
+python3 pyroclast.py compare \\
   --baseline mobilenet_v2 \\
   --executorch outputs/*.pte \\
   --save comparison.json
@@ -173,14 +173,14 @@ Read `README.md` for complete documentation on:
 
 ```bash
 # Generate a cool comparison
-python3 etorch.py compare \\
+python3 pyroclast.py compare \\
   --baseline mobilenet_v2 \\
   --executorch outputs/mobilenet_v2_test.pte \\
   --runs 200 \\
   --save my_benchmark.json
 
 # Analyze architecture with deep tree
-python3 etorch.py analyze models/eclipse_code --max-depth 5 --save-report
+python3 pyroclast.py analyze models/eclipse_code --max-depth 5 --save-report
 ```
 
 Take screenshots of the beautiful terminal output! 📸
