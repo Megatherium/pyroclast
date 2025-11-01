@@ -313,6 +313,36 @@ def batch_test(model_path, test_file, output, verbose):
     sys.exit(exit_code)
 
 
+@cli.command()
+@click.argument("model_path", type=click.Path(exists=True))
+@click.option("-o", "--output-dir", default="./outputs", help="Output directory")
+@click.option(
+    "-b",
+    "--backend",
+    type=click.Choice(["xnnpack", "vulkan", "portable"]),
+    default="xnnpack",
+    help="Conversion backend",
+)
+@click.option("--interval", default=2.0, help="Polling interval in seconds")
+@click.option("-v", "--verbose", is_flag=True, help="Verbose output")
+def watch(model_path, output_dir, backend, interval, verbose):
+    """Watch model directory and auto-reconvert on changes."""
+    from pyroclast.core import ModelWatcher
+
+    try:
+        watcher = ModelWatcher(
+            model_path=model_path,
+            output_dir=output_dir,
+            backend=backend,
+            interval=interval,
+            verbose=verbose,
+        )
+        watcher.watch()
+    except KeyboardInterrupt:
+        click.echo(f"\n{Colors.CYAN}Watch mode stopped{Colors.RESET}")
+        sys.exit(0)
+
+
 # JIT commands group
 @cli.group()
 def jit():

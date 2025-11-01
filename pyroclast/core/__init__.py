@@ -10,6 +10,7 @@ from .optimizer import AutoOptimizer, BackendResult
 from .doctor import ModelDoctor, Issue, Suggestion
 from .deployer import DeploymentGenerator
 from .batch_tester import BatchTester, TestCase
+from .watcher import ModelWatcher
 
 __all__ = [
     "ExecutorchConverter",
@@ -25,6 +26,7 @@ __all__ = [
     "DeploymentGenerator",
     "BatchTester",
     "TestCase",
+    "ModelWatcher",
     "Issue",
     "Suggestion",
 ]
