@@ -343,6 +343,35 @@ def watch(model_path, output_dir, backend, interval, verbose):
         sys.exit(0)
 
 
+@cli.command()
+@click.argument("model_path", type=click.Path(exists=True))
+@click.option("-r", "--runs", default=100, help="Number of profiling runs")
+@click.option("-w", "--warmup", default=10, help="Number of warmup runs")
+@click.option(
+    "--device",
+    type=click.Choice(["cpu", "cuda"]),
+    default="cpu",
+    help="Device to profile on",
+)
+@click.option("-o", "--output", type=click.Path(), help="Save results to JSON file")
+@click.option("-v", "--verbose", is_flag=True, help="Verbose output")
+def profile(model_path, runs, warmup, device, output, verbose):
+    """Profile model layer-by-layer to identify bottlenecks."""
+    from pyroclast.core import ModelProfiler
+
+    profiler = ModelProfiler(
+        model_path=model_path,
+        runs=runs,
+        warmup=warmup,
+        device=device,
+        output_file=output,
+        verbose=verbose,
+    )
+
+    exit_code = profiler.run()
+    sys.exit(exit_code)
+
+
 # JIT commands group
 @cli.group()
 def jit():

@@ -11,6 +11,7 @@ from .doctor import ModelDoctor, Issue, Suggestion
 from .deployer import DeploymentGenerator
 from .batch_tester import BatchTester, TestCase
 from .watcher import ModelWatcher
+from .profiler import ModelProfiler, LayerProfile
 
 __all__ = [
     "ExecutorchConverter",
@@ -27,6 +28,8 @@ __all__ = [
     "BatchTester",
     "TestCase",
     "ModelWatcher",
+    "ModelProfiler",
+    "LayerProfile",
     "Issue",
     "Suggestion",
 ]
