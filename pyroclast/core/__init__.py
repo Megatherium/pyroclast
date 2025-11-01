@@ -9,6 +9,7 @@ from .comparator import ModelComparator
 from .optimizer import AutoOptimizer, BackendResult
 from .doctor import ModelDoctor, Issue, Suggestion
 from .deployer import DeploymentGenerator
+from .batch_tester import BatchTester, TestCase
 
 __all__ = [
     "ExecutorchConverter",
@@ -22,6 +23,8 @@ __all__ = [
     "BackendResult",
     "ModelDoctor",
     "DeploymentGenerator",
+    "BatchTester",
+    "TestCase",
     "Issue",
     "Suggestion",
 ]

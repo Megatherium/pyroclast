@@ -293,6 +293,26 @@ def deploy(model_path, output_dir, template, port, verbose):
         sys.exit(1)
 
 
+@cli.command(name="batch-test")
+@click.argument("model_path", type=click.Path(exists=True))
+@click.argument("test_file", type=click.Path(exists=True))
+@click.option("-o", "--output", type=click.Path(), help="Save results to JSON file")
+@click.option("-v", "--verbose", is_flag=True, help="Verbose output")
+def batch_test(model_path, test_file, output, verbose):
+    """Run batch tests from JSON file."""
+    from pyroclast.core import BatchTester
+
+    tester = BatchTester(
+        model_path=model_path,
+        test_file=test_file,
+        output_file=output,
+        verbose=verbose,
+    )
+
+    exit_code = tester.run()
+    sys.exit(exit_code)
+
+
 # JIT commands group
 @cli.group()
 def jit():
