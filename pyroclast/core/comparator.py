@@ -17,7 +17,7 @@ import torch
 import numpy as np
 
 
-from etorch_utils import (
+from pyroclast.utils import (
     Colors,
     print_header,
     print_success,
@@ -31,6 +31,7 @@ from etorch_utils import (
 @dataclass
 class BenchmarkResult:
     """Results from a single benchmark run"""
+
     backend: str
     model_name: str
     mean_latency_ms: float
@@ -46,9 +47,6 @@ class BenchmarkResult:
     total_runs: int
 
 
-
-
-
 def format_latency(ms: float) -> str:
     """Format latency with units"""
     if ms < 1:
@@ -57,9 +55,6 @@ def format_latency(ms: float) -> str:
         return f"{ms:.2f}ms"
     else:
         return f"{ms/1000:.2f}s"
-
-
-
 
 
 class ModelComparator:
@@ -74,7 +69,7 @@ class ModelComparator:
         model: torch.nn.Module,
         input_tensor: torch.Tensor,
         num_runs: int = 100,
-        warmup_runs: int = 10
+        warmup_runs: int = 10,
     ) -> BenchmarkResult:
         """Benchmark original PyTorch model"""
         print_step("Benchmarking PyTorch (baseline)...")
@@ -112,7 +107,7 @@ class ModelComparator:
             throughput=1.0 / np.mean(times),
             model_size_mb=model_size,
             successful_runs=num_runs,
-            total_runs=num_runs
+            total_runs=num_runs,
         )
 
         print_success(f"Mean latency: {format_latency(result.mean_latency_ms)}")
@@ -125,7 +120,7 @@ class ModelComparator:
         backend_name: str,
         input_tensor: torch.Tensor,
         num_runs: int = 100,
-        warmup_runs: int = 10
+        warmup_runs: int = 10,
     ) -> BenchmarkResult:
         """Benchmark Executorch model"""
         print_step(f"Benchmarking Executorch ({backend_name})...")
@@ -173,7 +168,7 @@ class ModelComparator:
             throughput=1.0 / np.mean(times),
             model_size_mb=model_size_mb,
             successful_runs=successful,
-            total_runs=num_runs
+            total_runs=num_runs,
         )
 
         print_success(f"Mean latency: {format_latency(result.mean_latency_ms)}")
@@ -189,7 +184,16 @@ class ModelComparator:
         print_header("BENCHMARK COMPARISON")
 
         # Define table structure
-        columns = ["Backend", "Mean Latency", "Median", "P95", "P99", "Throughput", "Size", "Success Rate"]
+        columns = [
+            "Backend",
+            "Mean Latency",
+            "Median",
+            "P95",
+            "P99",
+            "Throughput",
+            "Size",
+            "Success Rate",
+        ]
         widths = [20, 14, 14, 14, 14, 14, 12, 14]
 
         header = ""
@@ -200,7 +204,6 @@ class ModelComparator:
 
         print(header[:-3])
         print(f"{Colors.CYAN}{separator[:-3]}{Colors.END}")
-
 
         # Find baseline for speedup calculation
         baseline = next((r for r in self.results if "PyTorch" in r.backend), self.results[0])
@@ -219,7 +222,7 @@ class ModelComparator:
                 format_latency(result.p99_latency_ms),
                 f"{result.throughput:.2f}/s",
                 f"{result.model_size_mb:.1f}MB",
-                f"{result.successful_runs}/{result.total_runs}"
+                f"{result.successful_runs}/{result.total_runs}",
             ]
 
             row = ""
@@ -249,7 +252,7 @@ class ModelComparator:
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
 
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(data, f, indent=2)
 
         print_success(f"Results saved to {output_path}")
@@ -277,7 +280,9 @@ class ModelComparator:
 
         if best != worst:
             improvement = worst.mean_latency_ms / best.mean_latency_ms
-            print(f"\n{Colors.BOLD}Maximum Speedup:{Colors.END} {Colors.GREEN}{improvement:.2f}x{Colors.END}")
+            print(
+                f"\n{Colors.BOLD}Maximum Speedup:{Colors.END} {Colors.GREEN}{improvement:.2f}x{Colors.END}"
+            )
 
 
 def main():
@@ -294,45 +299,24 @@ Examples:
 
   # Custom number of runs
   %(prog)s --baseline mobilenet_v2 --executorch outputs/*.pte --runs 500
-        """
+        """,
+    )
+
+    parser.add_argument("--baseline", help="PyTorch model for baseline (e.g., 'mobilenet_v2')")
+
+    parser.add_argument("--executorch", nargs="+", help="Executorch .pte model files to benchmark")
+
+    parser.add_argument(
+        "--runs", type=int, default=100, help="Number of benchmark runs (default: 100)"
     )
 
     parser.add_argument(
-        "--baseline",
-        help="PyTorch model for baseline (e.g., 'mobilenet_v2')"
+        "--warmup", type=int, default=10, help="Number of warmup runs (default: 10)"
     )
 
-    parser.add_argument(
-        "--executorch",
-        nargs="+",
-        help="Executorch .pte model files to benchmark"
-    )
+    parser.add_argument("--save", type=Path, help="Save results to JSON file")
 
-    parser.add_argument(
-        "--runs",
-        type=int,
-        default=100,
-        help="Number of benchmark runs (default: 100)"
-    )
-
-    parser.add_argument(
-        "--warmup",
-        type=int,
-        default=10,
-        help="Number of warmup runs (default: 10)"
-    )
-
-    parser.add_argument(
-        "--save",
-        type=Path,
-        help="Save results to JSON file"
-    )
-
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Verbose output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 
@@ -346,7 +330,7 @@ Examples:
     if args.baseline:
         print_header(f"Loading Baseline Model: {args.baseline}")
         try:
-            model = torch.hub.load('pytorch/vision:v0.10.0', args.baseline, pretrained=True)
+            model = torch.hub.load("pytorch/vision:v0.10.0", args.baseline, pretrained=True)
             model.eval()
             input_tensor = torch.randn(1, 3, 224, 224)
 

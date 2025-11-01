@@ -15,7 +15,7 @@ from typing import Any, Tuple, Optional
 import torch
 import torch.nn as nn
 
-from etorch_utils import (
+from pyroclast.utils import (
     Colors,
     print_error,
     print_header,

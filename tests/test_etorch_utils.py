@@ -5,7 +5,7 @@ import json
 import pytest
 from pathlib import Path
 
-from etorch_utils import (
+from pyroclast.utils import (
     InputSpec,
     load_input_file,
     validate_input_spec,

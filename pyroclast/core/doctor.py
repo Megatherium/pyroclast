@@ -14,7 +14,7 @@ from typing import Dict, List, Any, Optional, Tuple
 import torch
 from transformers import AutoModel, AutoTokenizer
 
-from etorch_utils import Colors, format_bytes
+from pyroclast.utils import Colors, format_bytes
 
 
 class Issue:

@@ -16,7 +16,7 @@ import shutil
 import torch
 from transformers import AutoModel, AutoTokenizer
 
-from etorch_utils import (
+from pyroclast.utils import (
     Colors,
     print_header,
     print_subheader,
@@ -28,7 +28,7 @@ from etorch_utils import (
 )
 
 # Import converters
-from etorch_converter import ExecutorchConverter, EXECUTORCH_AVAILABLE
+from pyroclast.core.converter import ExecutorchConverter, EXECUTORCH_AVAILABLE
 
 
 class BackendResult:
@@ -145,7 +145,7 @@ class AutoOptimizer:
 
             try:
                 # Import here to avoid circular dependency
-                from etorch_runner import ExecutorchRunner
+                from pyroclast.core.runner import ExecutorchRunner
 
                 runner = ExecutorchRunner(str(result.model_path), verbose=self.verbose)
                 runner.load_model()

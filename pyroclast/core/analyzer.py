@@ -8,13 +8,13 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 from collections import defaultdict
 import torch
 import torch.nn as nn
 
 
-from etorch_utils import (
+from pyroclast.utils import (
     Colors,
     print_header,
     print_success,
@@ -72,6 +72,7 @@ class ModelAnalyzer:
         try:
             # Try HuggingFace first
             from transformers import AutoModel
+
             self.model = AutoModel.from_pretrained(str(self.model_path))
             print_success("Loaded as HuggingFace model")
         except:
@@ -107,7 +108,7 @@ class ModelAnalyzer:
                 frozen_params += count
 
             # Group by layer
-            layer_name = name.split('.')[0] if '.' in name else name
+            layer_name = name.split(".")[0] if "." in name else name
             if layer_name not in param_by_layer:
                 param_by_layer[layer_name] = 0
             param_by_layer[layer_name] += count
@@ -119,10 +120,14 @@ class ModelAnalyzer:
         memory_size = sum(p.numel() * p.element_size() for p in self.model.parameters())
 
         print_info("Total Parameters", format_number(total_params))
-        print_info("Trainable", f"{format_number(trainable_params)} ({100*trainable_params/total_params:.1f}%)")
-        print_info("Frozen", f"{format_number(frozen_params)} ({100*frozen_params/total_params:.1f}%)")
+        print_info(
+            "Trainable",
+            f"{format_number(trainable_params)} ({100*trainable_params/total_params:.1f}%)",
+        )
+        print_info(
+            "Frozen", f"{format_number(frozen_params)} ({100*frozen_params/total_params:.1f}%)"
+        )
         print_info("Memory Size", format_bytes(memory_size))
-
 
         # Show top layers by parameter count
         print(f"\n{Colors.BOLD}Top Layers by Parameter Count:{Colors.END}")
@@ -138,7 +143,7 @@ class ModelAnalyzer:
             "trainable": trainable_params,
             "frozen": frozen_params,
             "memory_bytes": memory_size,
-            "by_layer": param_by_layer
+            "by_layer": param_by_layer,
         }
 
     def analyze_architecture(self) -> Dict[str, Any]:
@@ -171,10 +176,7 @@ class ModelAnalyzer:
             bar = "▓" * bar_length
             print(f"  {module_type:35s} {bar:30s} {count:>6d} ({percent:5.1f}%)")
 
-        return {
-            "total_layers": total_layers,
-            "module_types": dict(module_types)
-        }
+        return {"total_layers": total_layers, "module_types": dict(module_types)}
 
     def visualize_tree(self, max_depth: int = 3):
         """Visualize model as a tree"""
@@ -195,7 +197,7 @@ class ModelAnalyzer:
             children = list(module.named_children())
 
             for i, (child_name, child_module) in enumerate(children):
-                is_last_child = (i == len(children) - 1)
+                is_last_child = i == len(children) - 1
                 new_parent_last = parent_last + [is_last_child]
 
                 # Format child info
@@ -218,9 +220,11 @@ class ModelAnalyzer:
         print_info("Input Shape", str(input_shape))
 
         # Count operations heuristically
-        conv_layers = sum(1 for m in self.model.modules() if isinstance(m, (nn.Conv1d, nn.Conv2d, nn.Conv3d)))
+        conv_layers = sum(
+            1 for m in self.model.modules() if isinstance(m, (nn.Conv1d, nn.Conv2d, nn.Conv3d))
+        )
         linear_layers = sum(1 for m in self.model.modules() if isinstance(m, nn.Linear))
-        attention_layers = sum(1 for m in self.model.modules() if 'Attention' in type(m).__name__)
+        attention_layers = sum(1 for m in self.model.modules() if "Attention" in type(m).__name__)
 
         print_info("Convolutional Layers", conv_layers)
         print_info("Linear Layers", linear_layers)
@@ -241,7 +245,7 @@ class ModelAnalyzer:
         }
 
         if output_path:
-            with open(output_path, 'w') as f:
+            with open(output_path, "w") as f:
                 json.dump(report, f, indent=2)
             print_success(f"Report saved to {output_path}")
 
@@ -269,32 +273,18 @@ class ModelAnalyzer:
 def main():
     parser = argparse.ArgumentParser(
         description="Analyze PyTorch model architecture and parameters",
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    parser.add_argument(
-        "model_path",
-        help="Path to model (HuggingFace directory or .pt file)"
-    )
+    parser.add_argument("model_path", help="Path to model (HuggingFace directory or .pt file)")
 
     parser.add_argument(
-        "--max-depth",
-        type=int,
-        default=3,
-        help="Maximum tree depth for visualization (default: 3)"
+        "--max-depth", type=int, default=3, help="Maximum tree depth for visualization (default: 3)"
     )
 
-    parser.add_argument(
-        "--save-report",
-        action="store_true",
-        help="Save analysis report as JSON"
-    )
+    parser.add_argument("--save-report", action="store_true", help="Save analysis report as JSON")
 
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Verbose output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 

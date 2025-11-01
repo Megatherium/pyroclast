@@ -15,13 +15,14 @@ import numpy as np
 try:
     import torch
     from executorch.extension.pybindings.portable_lib import _load_for_executorch
+
     EXECUTORCH_AVAILABLE = True
 except ImportError as e:
     print(f"Error: Executorch not available: {e}")
     EXECUTORCH_AVAILABLE = False
 
 
-from etorch_utils import (
+from pyroclast.utils import (
     Colors,
     print_header,
     print_subheader,
@@ -34,6 +35,7 @@ from etorch_utils import (
 
 class BenchmarkStats:
     """Statistics for benchmarking"""
+
     def __init__(self):
         self.times: List[float] = []
         self.memory_usage: List[float] = []
@@ -63,11 +65,7 @@ class BenchmarkStats:
 class ExecutorchRunner:
     """Runner for Executorch models"""
 
-    def __init__(
-        self,
-        model_path: str,
-        verbose: bool = False
-    ):
+    def __init__(self, model_path: str, verbose: bool = False):
         self.model_path = Path(model_path)
         self.verbose = verbose
         self.model = None
@@ -77,9 +75,7 @@ class ExecutorchRunner:
             raise FileNotFoundError(f"Model not found: {model_path}")
 
         # Load metadata if available
-        metadata_path = self.model_path.with_name(
-            self.model_path.stem + "_metadata.json"
-        )
+        metadata_path = self.model_path.with_name(self.model_path.stem + "_metadata.json")
         if metadata_path.exists():
             with open(metadata_path) as f:
                 self.metadata = json.load(f)
@@ -130,9 +126,7 @@ class ExecutorchRunner:
             print_warning(f"Could not inspect model: {e}")
 
     def run_inference(
-        self,
-        inputs: List[torch.Tensor],
-        method_name: str = "forward"
+        self, inputs: List[torch.Tensor], method_name: str = "forward"
     ) -> List[torch.Tensor]:
         """Run inference on the model"""
         if self.model is None:
@@ -150,7 +144,7 @@ class ExecutorchRunner:
         inputs: List[torch.Tensor],
         num_runs: int = 100,
         warmup_runs: int = 10,
-        method_name: str = "forward"
+        method_name: str = "forward",
     ) -> BenchmarkStats:
         """Benchmark model performance"""
         print_subheader(f"Benchmarking ({num_runs} runs, {warmup_runs} warmup)")
@@ -236,39 +230,22 @@ Examples:
 
   # Custom warmup and runs
   %(prog)s model.pte -b -r 500 -w 20
-        """
+        """,
+    )
+
+    parser.add_argument("model_path", help="Path to Executorch .pte model file")
+
+    parser.add_argument("-b", "--benchmark", action="store_true", help="Run performance benchmark")
+
+    parser.add_argument(
+        "-r", "--runs", type=int, default=100, help="Number of benchmark runs (default: 100)"
     )
 
     parser.add_argument(
-        "model_path",
-        help="Path to Executorch .pte model file"
+        "-w", "--warmup", type=int, default=10, help="Number of warmup runs (default: 10)"
     )
 
-    parser.add_argument(
-        "-b", "--benchmark",
-        action="store_true",
-        help="Run performance benchmark"
-    )
-
-    parser.add_argument(
-        "-r", "--runs",
-        type=int,
-        default=100,
-        help="Number of benchmark runs (default: 100)"
-    )
-
-    parser.add_argument(
-        "-w", "--warmup",
-        type=int,
-        default=10,
-        help="Number of warmup runs (default: 10)"
-    )
-
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Enable verbose output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()
 
@@ -277,16 +254,9 @@ Examples:
         sys.exit(1)
 
     try:
-        runner = ExecutorchRunner(
-            model_path=args.model_path,
-            verbose=args.verbose
-        )
+        runner = ExecutorchRunner(model_path=args.model_path, verbose=args.verbose)
 
-        runner.run(
-            benchmark=args.benchmark,
-            num_runs=args.runs,
-            warmup_runs=args.warmup
-        )
+        runner.run(benchmark=args.benchmark, num_runs=args.runs, warmup_runs=args.warmup)
 
         sys.exit(0)
 
@@ -294,6 +264,7 @@ Examples:
         print_error(f"Runner failed: {e}")
         if args.verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 

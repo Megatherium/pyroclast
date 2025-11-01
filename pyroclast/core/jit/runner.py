@@ -15,7 +15,7 @@ import numpy as np
 import torch
 
 
-from etorch_utils import (
+from pyroclast.utils import (
     Colors,
     print_header,
     print_subheader,
@@ -29,13 +29,14 @@ from etorch_utils import (
 def check_vulkan_support() -> bool:
     """Check if Vulkan backend is available"""
     try:
-        return hasattr(torch.backends, 'vulkan') and torch.backends.vulkan.is_available()
+        return hasattr(torch.backends, "vulkan") and torch.backends.vulkan.is_available()
     except:
         return False
 
 
 class BenchmarkStats:
     """Statistics for benchmarking"""
+
     def __init__(self):
         self.times: List[float] = []
 
@@ -62,12 +63,7 @@ class BenchmarkStats:
 class JITRunner:
     """Runner for TorchScript models"""
 
-    def __init__(
-        self,
-        model_path: str,
-        device: str = "cpu",
-        verbose: bool = False
-    ):
+    def __init__(self, model_path: str, device: str = "cpu", verbose: bool = False):
         self.model_path = Path(model_path)
         self.device = device
         self.verbose = verbose
@@ -78,9 +74,7 @@ class JITRunner:
             raise FileNotFoundError(f"Model not found: {model_path}")
 
         # Load metadata if available
-        metadata_path = self.model_path.with_name(
-            self.model_path.stem + "_metadata.json"
-        )
+        metadata_path = self.model_path.with_name(self.model_path.stem + "_metadata.json")
         if metadata_path.exists():
             with open(metadata_path) as f:
                 self.metadata = json.load(f)
@@ -92,8 +86,8 @@ class JITRunner:
         backends = {
             "CPU": True,
             "CUDA": torch.cuda.is_available(),
-            "MPS": torch.backends.mps.is_available() if hasattr(torch.backends, 'mps') else False,
-            "Vulkan": check_vulkan_support()
+            "MPS": torch.backends.mps.is_available() if hasattr(torch.backends, "mps") else False,
+            "Vulkan": check_vulkan_support(),
         }
 
         for backend, available in backends.items():
@@ -123,8 +117,7 @@ class JITRunner:
         try:
             # Load model with map_location
             self.model = torch.jit.load(
-                str(self.model_path),
-                map_location=torch.device(self.device)
+                str(self.model_path), map_location=torch.device(self.device)
             )
             self.model.eval()
 
@@ -167,11 +160,7 @@ class JITRunner:
             print_error(f"Inference failed: {e}")
             raise
 
-    def benchmark(
-        self,
-        num_runs: int = 100,
-        warmup_runs: int = 10
-    ) -> BenchmarkStats:
+    def benchmark(self, num_runs: int = 100, warmup_runs: int = 10) -> BenchmarkStats:
         """Benchmark model performance"""
         print_subheader(f"Benchmarking ({num_runs} runs, {warmup_runs} warmup)")
 
@@ -232,12 +221,7 @@ class JITRunner:
 
         return stats
 
-    def run(
-        self,
-        benchmark: bool = False,
-        num_runs: int = 100,
-        warmup_runs: int = 10
-    ):
+    def run(self, benchmark: bool = False, num_runs: int = 100, warmup_runs: int = 10):
         """Main execution flow"""
         print_header("PYTORCH JIT RUNNER")
 
@@ -281,61 +265,37 @@ Examples:
 
   # Run on Vulkan (if available)
   %(prog)s model_jit.pt --device vulkan --benchmark
-        """
+        """,
     )
 
-    parser.add_argument(
-        "model_path",
-        help="Path to TorchScript .pt model file"
-    )
+    parser.add_argument("model_path", help="Path to TorchScript .pt model file")
 
     parser.add_argument(
-        "-d", "--device",
+        "-d",
+        "--device",
         choices=["cpu", "cuda", "vulkan"],
         default="cpu",
-        help="Device to run on (default: cpu)"
+        help="Device to run on (default: cpu)",
+    )
+
+    parser.add_argument("-b", "--benchmark", action="store_true", help="Run performance benchmark")
+
+    parser.add_argument(
+        "-r", "--runs", type=int, default=100, help="Number of benchmark runs (default: 100)"
     )
 
     parser.add_argument(
-        "-b", "--benchmark",
-        action="store_true",
-        help="Run performance benchmark"
+        "-w", "--warmup", type=int, default=10, help="Number of warmup runs (default: 10)"
     )
 
-    parser.add_argument(
-        "-r", "--runs",
-        type=int,
-        default=100,
-        help="Number of benchmark runs (default: 100)"
-    )
-
-    parser.add_argument(
-        "-w", "--warmup",
-        type=int,
-        default=10,
-        help="Number of warmup runs (default: 10)"
-    )
-
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Verbose output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 
     try:
-        runner = JITRunner(
-            model_path=args.model_path,
-            device=args.device,
-            verbose=args.verbose
-        )
+        runner = JITRunner(model_path=args.model_path, device=args.device, verbose=args.verbose)
 
-        runner.run(
-            benchmark=args.benchmark,
-            num_runs=args.runs,
-            warmup_runs=args.warmup
-        )
+        runner.run(benchmark=args.benchmark, num_runs=args.runs, warmup_runs=args.warmup)
 
         sys.exit(0)
 
@@ -343,6 +303,7 @@ Examples:
         print_error(f"Runner failed: {e}")
         if args.verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 

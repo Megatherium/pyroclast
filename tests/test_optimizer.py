@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 import tempfile
 
-from etorch_optimizer import BackendResult, AutoOptimizer
+from pyroclast.core.optimizer import BackendResult, AutoOptimizer
 
 
 class TestBackendResult:
@@ -74,8 +74,8 @@ class TestAutoOptimizer:
         assert optimizer.backends == ["portable"]
 
     @pytest.mark.integration
-    @patch('etorch_optimizer.ExecutorchConverter')
-    @patch('etorch_runner.ExecutorchRunner')
+    @patch('pyroclast.core.optimizer.ExecutorchConverter')
+    @patch('pyroclast.core.runner.ExecutorchRunner')
     def test_test_backend_success(self, mock_runner_class, mock_converter_class, temp_dir):
         """Test successful backend testing"""
         # Setup mocks
@@ -122,7 +122,7 @@ class TestAutoOptimizer:
         assert result.model_size_mb > 0
 
     @pytest.mark.integration
-    @patch('etorch_optimizer.ExecutorchConverter')
+    @patch('pyroclast.core.optimizer.ExecutorchConverter')
     def test_test_backend_conversion_failure(self, mock_converter_class, temp_dir):
         """Test backend testing with conversion failure"""
         # Setup mock to fail
@@ -146,8 +146,8 @@ class TestAutoOptimizer:
         assert result.benchmark_success == False
 
     @pytest.mark.integration
-    @patch('etorch_runner.ExecutorchRunner')
-    @patch('etorch_optimizer.ExecutorchConverter')
+    @patch('pyroclast.core.runner.ExecutorchRunner')
+    @patch('pyroclast.core.optimizer.ExecutorchConverter')
     def test_test_backend_benchmark_failure(self, mock_converter_class, mock_runner_class, temp_dir):
         """Test backend testing with benchmark failure"""
         # Setup conversion to succeed

@@ -29,7 +29,7 @@ except ImportError as e:
     EXECUTORCH_AVAILABLE = False
 
 
-from etorch_utils import (
+from pyroclast.utils import (
     Colors,
     print_header,
     print_subheader,
