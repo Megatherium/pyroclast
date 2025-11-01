@@ -13,7 +13,9 @@ CLAUDE.md
 GEMINI.md
 
 # Misc
-/__pycache__
+__pycache__/
+*.pyc
+*.pyo
 /.mypy_cache
 /workshop
 /.venv
