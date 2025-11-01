@@ -1,0 +1,9 @@
+{
+  "description": "A clear female voice with moderate speed and pitch",
+  "prompt": "This is a test of the input file system for Executorch model conversion.",
+  "metadata": {
+    "temperature": 0.9,
+    "max_length": 512,
+    "note": "Example input specification"
+  }
+}

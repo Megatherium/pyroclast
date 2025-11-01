@@ -52,8 +52,7 @@ class ParlerTTSConverter:
 
         try:
             self.model = ParlerTTSForConditionalGeneration.from_pretrained(
-                str(self.model_path),
-                torch_dtype=torch.float32
+                str(self.model_path), torch_dtype=torch.float32
             )
             self.tokenizer = AutoTokenizer.from_pretrained(str(self.model_path))
             self.model.eval()
@@ -63,9 +62,9 @@ class ParlerTTSConverter:
 
             # Get model info
             total_params = sum(p.numel() for p in self.model.parameters())
-            model_size_mb = sum(
-                p.numel() * p.element_size() for p in self.model.parameters()
-            ) / (1024 * 1024)
+            model_size_mb = sum(p.numel() * p.element_size() for p in self.model.parameters()) / (
+                1024 * 1024
+            )
 
             print_info("Total Parameters", f"{total_params:,}")
             print_info("Model Size", f"{model_size_mb:.2f} MB")
@@ -83,6 +82,7 @@ class ParlerTTSConverter:
             print_error(f"Failed to load model: {e}")
             if self.verbose:
                 import traceback
+
                 traceback.print_exc()
             return False
 
@@ -124,13 +124,30 @@ class ParlerTTSConverter:
         code = '''#!/usr/bin/env python3
 """
 ParlerTTS Inference Script
-Reference implementation for audio generation
+Reference implementation for audio generation with input file support
 """
 
+import argparse
+import json
+from pathlib import Path
 import torch
 from parler_tts import ParlerTTSForConditionalGeneration
 from transformers import AutoTokenizer
 import soundfile as sf
+
+
+def load_input_file(file_path: str):
+    """Load input specifications from JSON file"""
+    with open(file_path, 'r') as f:
+        data = json.load(f)
+
+    # Support batch format
+    if "inputs" in data:
+        return data["inputs"]
+
+    # Single input format
+    return [data]
+
 
 def generate_speech(
     model_path: str,
@@ -150,11 +167,15 @@ def generate_speech(
         device: Device to use ("cpu", "cuda:0", etc.)
     """
 
-    # Load model
-    print(f"Loading model from {model_path}...")
-    model = ParlerTTSForConditionalGeneration.from_pretrained(model_path).to(device)
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model.eval()
+    # Load model (cache for batch processing)
+    if not hasattr(generate_speech, 'model'):
+        print(f"Loading model from {model_path}...")
+        generate_speech.model = ParlerTTSForConditionalGeneration.from_pretrained(model_path).to(device)
+        generate_speech.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        generate_speech.model.eval()
+
+    model = generate_speech.model
+    tokenizer = generate_speech.tokenizer
 
     # Tokenize inputs
     print(f"Generating speech for: {text[:50]}...")
@@ -174,18 +195,59 @@ def generate_speech(
     print(f"✓ Audio saved to {output_path}")
 
 
-if __name__ == "__main__":
-    # Example usage
-    generate_speech(
-        model_path="models/eclipse_code",
-        text="Hello, this is a test of the ParlerTTS model.",
-        description="A clear female voice speaks with moderate speed and pitch.",
-        output_path="test_output.wav"
+def main():
+    parser = argparse.ArgumentParser(
+        description="Generate speech with ParlerTTS",
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
+
+    parser.add_argument("model_path", help="Path to ParlerTTS model")
+    parser.add_argument("--input-file", help="JSON file with input specifications")
+    parser.add_argument("--description", help="Voice description")
+    parser.add_argument("--prompt", help="Text to synthesize")
+    parser.add_argument("-o", "--output", default="output.wav", help="Output audio file")
+    parser.add_argument("--device", default="cpu", help="Device (cpu, cuda:0, etc.)")
+
+    args = parser.parse_args()
+
+    # Handle input file or CLI args
+    if args.input_file:
+        inputs = load_input_file(args.input_file)
+        output_dir = Path(args.output).parent
+        output_stem = Path(args.output).stem
+        output_suffix = Path(args.output).suffix
+
+        for i, spec in enumerate(inputs):
+            description = spec.get("description", "A clear voice")
+            text = spec.get("prompt", "Hello")
+            output_path = output_dir / f"{output_stem}_{i:03d}{output_suffix}"
+
+            generate_speech(
+                model_path=args.model_path,
+                text=text,
+                description=description,
+                output_path=str(output_path),
+                device=args.device
+            )
+    else:
+        if not args.description or not args.prompt:
+            parser.error("Either --input-file or both --description and --prompt are required")
+
+        generate_speech(
+            model_path=args.model_path,
+            text=args.prompt,
+            description=args.description,
+            output_path=args.output,
+            device=args.device
+        )
+
+
+if __name__ == "__main__":
+    main()
 '''
 
         output_file = self.output_dir / "parler_tts_inference.py"
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             f.write(code)
 
         print_success(f"Inference script saved to: {output_file}")
@@ -202,10 +264,14 @@ if __name__ == "__main__":
             "components": {
                 "text_encoder": "T5-based encoder",
                 "decoder": "Transformer decoder",
-                "audio_encoder": "DAC (Descript Audio Codec)"
+                "audio_encoder": "DAC (Descript Audio Codec)",
             },
             "parameters": sum(p.numel() for p in self.model.parameters()),
-            "sampling_rate": self.model.config.sampling_rate if hasattr(self.model.config, 'sampling_rate') else 44100,
+            "sampling_rate": (
+                self.model.config.sampling_rate
+                if hasattr(self.model.config, "sampling_rate")
+                else 44100
+            ),
             "executorch_ready": False,
             "notes": [
                 "Full Executorch export is challenging due to:",
@@ -217,12 +283,12 @@ if __name__ == "__main__":
                 "Recommended approach:",
                 "- Use PyTorch JIT for inference optimization",
                 "- Export sub-components separately if needed",
-                "- Consider ONNX export for deployment"
-            ]
+                "- Consider ONNX export for deployment",
+            ],
         }
 
         output_file = self.output_dir / "parler_tts_metadata.json"
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(metadata, f, indent=2)
 
         print_success(f"Metadata saved to: {output_file}")
@@ -267,7 +333,9 @@ if __name__ == "__main__":
         print("  2. Consider optimizing with torch.compile() (PyTorch 2.x)")
         print("  3. For deployment, evaluate ONNX or TorchScript")
         print()
-        print(f"{Colors.YELLOW}Note:{Colors.END} For simpler models (e.g., MobileNet), use etorch_converter.py")
+        print(
+            f"{Colors.YELLOW}Note:{Colors.END} For simpler models (e.g., MobileNet), use etorch_converter.py"
+        )
 
         return True
 
@@ -275,32 +343,19 @@ if __name__ == "__main__":
 def main():
     parser = argparse.ArgumentParser(
         description="ParlerTTS to Executorch converter (analysis and guidance)",
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    parser.add_argument(
-        "model_path",
-        help="Path to ParlerTTS model directory"
-    )
+    parser.add_argument("model_path", help="Path to ParlerTTS model directory")
 
-    parser.add_argument(
-        "-o", "--output-dir",
-        default="./outputs",
-        help="Output directory"
-    )
+    parser.add_argument("-o", "--output-dir", default="./outputs", help="Output directory")
 
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Verbose output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 
     converter = ParlerTTSConverter(
-        model_path=args.model_path,
-        output_dir=args.output_dir,
-        verbose=args.verbose
+        model_path=args.model_path, output_dir=args.output_dir, verbose=args.verbose
     )
 
     success = converter.convert()

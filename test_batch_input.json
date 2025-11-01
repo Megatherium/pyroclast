@@ -1,0 +1,16 @@
+{
+  "inputs": [
+    {
+      "description": "A clear female voice with moderate speed",
+      "prompt": "Hello, this is the first test sample."
+    },
+    {
+      "description": "A deep male voice speaking slowly",
+      "prompt": "This is the second sample with a different voice."
+    },
+    {
+      "description": "An energetic young voice",
+      "prompt": "And here's the third sample, full of energy!"
+    }
+  ]
+}
