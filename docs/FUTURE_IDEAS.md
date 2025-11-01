@@ -7,8 +7,8 @@
 
 ### ✅ Completed
 - [x] JSON input file support for converters ✓ (feat/input-file-support)
-- [ ] `etorch optimize --auto` - Auto-backend selector
-- [ ] `etorch doctor` - Health check & diagnostics tool
+- [x] `etorch optimize --auto` - Auto-backend selector ✓ (feat/auto-optimizer)
+- [ ] `etorch doctor` - Health check & diagnostics tool (deferred to next sprint)
 
 ## 🔥 Tier 1: Game Changers (High Impact)
 

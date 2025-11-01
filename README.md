@@ -6,6 +6,8 @@ A comprehensive toolkit for converting, running, analyzing, and benchmarking PyT
 
 - **Model Conversion**: Convert HuggingFace and PyTorch models to Executorch format
 - **Multiple Backends**: Support for XNNPACK (CPU), Vulkan (GPU), and portable backends
+- **Auto-Optimization**: Automatically test all backends and select the best one
+- **Input File Support**: JSON-based input specification for batch processing
 - **Performance Benchmarking**: Compare performance across backends and models
 - **Model Analysis**: Deep inspection of model architecture and parameters
 - **Beautiful CLI**: Unified command-line interface with colored output
@@ -34,7 +36,7 @@ All dependencies are pre-installed in the `torch` virtualenv:
 
 ### Master CLI
 
-The toolkit provides a unified CLI (`etorch.py`) with four main commands:
+The toolkit provides a unified CLI (`etorch.py`) with five main commands:
 
 ```bash
 # Display help and see the beautiful banner
@@ -45,6 +47,7 @@ python3 etorch.py convert --help
 python3 etorch.py run --help
 python3 etorch.py analyze --help
 python3 etorch.py compare --help
+python3 etorch.py optimize --help
 ```
 
 ### 1. Convert a Model
@@ -63,12 +66,29 @@ python3 etorch.py convert models/eclipse_code -o outputs/ --backend portable
 
 # With quantization
 python3 etorch.py convert models/eclipse_code -o outputs/ --quantize
+
+# With custom inputs from JSON file
+python3 etorch_converter.py models/my_model -o outputs/ --input-file inputs.json
+
+# With CLI inputs (for ParlerTTS)
+python3 etorch_converter.py models/parlertts -o outputs/ \
+  --description "A clear female voice" \
+  --prompt "Hello world"
 ```
 
 **Supported Backends:**
 - `xnnpack`: Optimized for CPU execution
 - `vulkan`: GPU execution via Vulkan
 - `portable`: Maximum compatibility, no optimizations
+
+**Input File Format:**
+```json
+{
+  "description": "A clear female voice",
+  "prompt": "Text to convert",
+  "metadata": {"temperature": 0.9}
+}
+```
 
 ### 2. Run Inference
 
@@ -128,6 +148,45 @@ The comparison tool provides:
 - Throughput measurements
 - Speedup calculations
 - Model size comparisons
+
+### 5. Auto-Optimize Model
+
+Automatically test all backends and select the best one:
+
+```bash
+# Auto-optimize (tests all backends)
+python3 etorch.py optimize models/my_model -o outputs/
+
+# Test specific backends only
+python3 etorch.py optimize models/my_model -o outputs/ --backends portable xnnpack
+
+# More benchmark runs for accuracy
+python3 etorch.py optimize models/my_model -o outputs/ --runs 200
+```
+
+The optimizer:
+- Converts model with each available backend
+- Benchmarks each converted model
+- Generates detailed comparison report
+- Automatically saves the winning model
+- Exports results to JSON
+
+**Example Output:**
+```
+╔══════════════════════════════════════════════════════════════════════════╗
+║         EXECUTORCH AUTO-OPTIMIZER                                        ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+Results Comparison:
+
+Backend      Latency      Throughput      Size       Status
+────────────────────────────────────────────────────────────────────────────
+✓ xnnpack     82.34ms      12.15/sec      13.58MB    ✓          BEST
+  portable    1250.12ms    0.80/sec       13.58MB    ✓
+  vulkan      N/A          N/A            N/A        ✗ Convert
+
+Winner: XNNPACK (15.2x faster than portable)
+```
 
 ## 🛠️ Individual Tools
 
