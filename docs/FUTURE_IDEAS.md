@@ -30,7 +30,7 @@
 
 **Example Usage**:
 ```bash
-python3 etorch.py doctor models/my_model
+python3 pyroclast.py doctor models/my_model
 ```
 
 **Example Output**:
@@ -71,7 +71,7 @@ python3 etorch.py doctor models/my_model
 
 **Example Usage**:
 ```bash
-python3 etorch.py optimize models/my_model --auto --runs 100
+python3 pyroclast.py optimize models/my_model --auto --runs 100
 ```
 
 **Example Output**:
@@ -115,9 +115,9 @@ Testing: vulkan... ✗ (conversion failed)
 
 **Example Usage**:
 ```bash
-python3 etorch.py deploy outputs/model.pte --template fastapi
-python3 etorch.py deploy outputs/model.pte --template lambda
-python3 etorch.py deploy outputs/model.pte --template docker
+python3 pyroclast.py deploy outputs/model.pte --template fastapi
+python3 pyroclast.py deploy outputs/model.pte --template lambda
+python3 pyroclast.py deploy outputs/model.pte --template docker
 ```
 
 **Generated Files**:
@@ -177,7 +177,7 @@ Linear_1        ████ 8% (4ms)
 
 **Example Usage**:
 ```bash
-python3 etorch.py diff model_v1.pte model_v2.pte --test-inputs test.json
+python3 pyroclast.py diff model_v1.pte model_v2.pte --test-inputs test.json
 ```
 
 ---
@@ -195,7 +195,7 @@ python3 etorch.py diff model_v1.pte model_v2.pte --test-inputs test.json
 
 **Example Usage**:
 ```bash
-$ python3 etorch.py repl outputs/model.pte
+$ python3 pyroclast.py repl outputs/model.pte
 
 Executorch REPL v1.0
 Model: mobilenet_v2_test.pte
@@ -237,7 +237,7 @@ Output shape: (1, 32, 112, 112)
 
 **Example**:
 ```bash
-python3 etorch.py batch-test model.pte --inputs test_suite.json
+python3 pyroclast.py batch-test model.pte --inputs test_suite.json
 ```
 
 ---
@@ -341,7 +341,7 @@ All features should:
 
 A feature is "done" when:
 - [ ] Code written and tested
-- [ ] Integrated into `etorch.py` master CLI
+- [ ] Integrated into `pyroclast.py` master CLI
 - [ ] Documented in README.md
 - [ ] Has at least one usage example
 - [ ] Committed with conventional commit message

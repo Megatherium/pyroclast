@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Executorch Toolkit - Master CLI
+Pyroclast - Executorch Toolkit Master CLI
 Unified interface for model conversion, running, analysis, and comparison
 """
 
@@ -53,8 +53,10 @@ def convert_model(args) -> int:
         sys.executable,
         "etorch_converter.py",
         args.model_path,
-        "-o", args.output_dir,
-        "-b", args.backend,
+        "-o",
+        args.output_dir,
+        "-b",
+        args.backend,
     ]
 
     if args.quantize:
@@ -91,7 +93,8 @@ def analyze_model(args) -> int:
         sys.executable,
         "model_analyzer.py",
         args.model_path,
-        "--max-depth", str(args.max_depth),
+        "--max-depth",
+        str(args.max_depth),
     ]
 
     if args.save_report:
@@ -108,8 +111,10 @@ def compare_models(args) -> int:
     cmd = [
         sys.executable,
         "etorch_compare.py",
-        "--runs", str(args.runs),
-        "--warmup", str(args.warmup),
+        "--runs",
+        str(args.runs),
+        "--warmup",
+        str(args.warmup),
     ]
 
     if args.baseline:
@@ -130,7 +135,7 @@ def compare_models(args) -> int:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Executorch Toolkit - Unified CLI for model operations",
+        description="Pyroclast - Executorch Toolkit for model operations",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 {Colors.BOLD}Examples:{Colors.END}
@@ -154,28 +159,28 @@ def main():
 
 {Colors.BOLD}For detailed help on a command:{Colors.END}
   %(prog)s <command> --help
-        """
+        """,
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
     # Convert command
-    convert_parser = subparsers.add_parser(
-        "convert",
-        help="Convert model to Executorch format"
-    )
+    convert_parser = subparsers.add_parser("convert", help="Convert model to Executorch format")
     convert_parser.add_argument("model_path", help="Path to model")
     convert_parser.add_argument("-o", "--output-dir", default="./outputs", help="Output directory")
-    convert_parser.add_argument("-b", "--backend", default="xnnpack", choices=["xnnpack", "vulkan", "portable"], help="Backend")
+    convert_parser.add_argument(
+        "-b",
+        "--backend",
+        default="xnnpack",
+        choices=["xnnpack", "vulkan", "portable"],
+        help="Backend",
+    )
     convert_parser.add_argument("-q", "--quantize", action="store_true", help="Apply quantization")
     convert_parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     convert_parser.set_defaults(func=convert_model)
 
     # Run command
-    run_parser = subparsers.add_parser(
-        "run",
-        help="Run inference on Executorch model"
-    )
+    run_parser = subparsers.add_parser("run", help="Run inference on Executorch model")
     run_parser.add_argument("model_path", help="Path to .pte model file")
     run_parser.add_argument("-b", "--benchmark", action="store_true", help="Run benchmark")
     run_parser.add_argument("-r", "--runs", type=int, default=100, help="Number of runs")
@@ -184,10 +189,7 @@ def main():
     run_parser.set_defaults(func=run_model)
 
     # Analyze command
-    analyze_parser = subparsers.add_parser(
-        "analyze",
-        help="Analyze model architecture"
-    )
+    analyze_parser = subparsers.add_parser("analyze", help="Analyze model architecture")
     analyze_parser.add_argument("model_path", help="Path to model")
     analyze_parser.add_argument("--max-depth", type=int, default=3, help="Max tree depth")
     analyze_parser.add_argument("--save-report", action="store_true", help="Save JSON report")
@@ -195,10 +197,7 @@ def main():
     analyze_parser.set_defaults(func=analyze_model)
 
     # Compare command
-    compare_parser = subparsers.add_parser(
-        "compare",
-        help="Compare model performance"
-    )
+    compare_parser = subparsers.add_parser("compare", help="Compare model performance")
     compare_parser.add_argument("--baseline", help="PyTorch baseline model")
     compare_parser.add_argument("--executorch", nargs="+", help="Executorch models to compare")
     compare_parser.add_argument("-r", "--runs", type=int, default=100, help="Number of runs")
@@ -208,58 +207,98 @@ def main():
     compare_parser.set_defaults(func=compare_models)
 
     # JIT Convert command
-    jit_convert_parser = subparsers.add_parser(
-        "jit-convert",
-        help="Convert model to TorchScript"
-    )
+    jit_convert_parser = subparsers.add_parser("jit-convert", help="Convert model to TorchScript")
     jit_convert_parser.add_argument("model_path", help="Path to model")
-    jit_convert_parser.add_argument("-o", "--output-dir", default="./outputs", help="Output directory")
-    jit_convert_parser.add_argument("-m", "--method", choices=["script", "trace"], default="trace", help="Conversion method")
-    jit_convert_parser.add_argument("--no-optimize", action="store_true", help="Disable optimization")
+    jit_convert_parser.add_argument(
+        "-o", "--output-dir", default="./outputs", help="Output directory"
+    )
+    jit_convert_parser.add_argument(
+        "-m", "--method", choices=["script", "trace"], default="trace", help="Conversion method"
+    )
+    jit_convert_parser.add_argument(
+        "--no-optimize", action="store_true", help="Disable optimization"
+    )
     jit_convert_parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
-    jit_convert_parser.set_defaults(func=lambda args: run_command([
-        sys.executable, "jit_converter.py", args.model_path,
-        "-o", args.output_dir, "-m", args.method
-    ] + (["--no-optimize"] if args.no_optimize else []) + (["-v"] if args.verbose else []),
-        "Converting to TorchScript"))
+    jit_convert_parser.set_defaults(
+        func=lambda args: run_command(
+            [
+                sys.executable,
+                "jit_converter.py",
+                args.model_path,
+                "-o",
+                args.output_dir,
+                "-m",
+                args.method,
+            ]
+            + (["--no-optimize"] if args.no_optimize else [])
+            + (["-v"] if args.verbose else []),
+            "Converting to TorchScript",
+        )
+    )
 
     # JIT Run command
-    jit_run_parser = subparsers.add_parser(
-        "jit-run",
-        help="Run TorchScript model"
-    )
+    jit_run_parser = subparsers.add_parser("jit-run", help="Run TorchScript model")
     jit_run_parser.add_argument("model_path", help="Path to .pt model")
-    jit_run_parser.add_argument("-d", "--device", choices=["cpu", "cuda", "vulkan"], default="cpu", help="Device")
+    jit_run_parser.add_argument(
+        "-d", "--device", choices=["cpu", "cuda", "vulkan"], default="cpu", help="Device"
+    )
     jit_run_parser.add_argument("-b", "--benchmark", action="store_true", help="Run benchmark")
     jit_run_parser.add_argument("-r", "--runs", type=int, default=100, help="Number of runs")
     jit_run_parser.add_argument("-w", "--warmup", type=int, default=10, help="Warmup runs")
     jit_run_parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
-    jit_run_parser.set_defaults(func=lambda args: run_command([
-        sys.executable, "jit_runner.py", args.model_path,
-        "-d", args.device
-    ] + (["--benchmark", "--runs", str(args.runs), "--warmup", str(args.warmup)] if args.benchmark else []) +
-        (["-v"] if args.verbose else []),
-        "Running TorchScript model"))
+    jit_run_parser.set_defaults(
+        func=lambda args: run_command(
+            [sys.executable, "jit_runner.py", args.model_path, "-d", args.device]
+            + (
+                ["--benchmark", "--runs", str(args.runs), "--warmup", str(args.warmup)]
+                if args.benchmark
+                else []
+            )
+            + (["-v"] if args.verbose else []),
+            "Running TorchScript model",
+        )
+    )
 
     # TTS command
-    tts_parser = subparsers.add_parser(
-        "tts",
-        help="Text-to-Speech with ParlerTTS"
-    )
+    tts_parser = subparsers.add_parser("tts", help="Text-to-Speech with ParlerTTS")
     tts_parser.add_argument("model_path", help="Path to ParlerTTS model")
     tts_parser.add_argument("text", help="Text to synthesize")
     tts_parser.add_argument("-o", "--output", default="output", help="Output path")
-    tts_parser.add_argument("--description", default="A clear female voice speaks with moderate speed and pitch.", help="Voice description")
-    tts_parser.add_argument("--formats", nargs="+", choices=["wav", "opus", "ogg", "mp3"], default=["wav"], help="Output formats")
+    tts_parser.add_argument(
+        "--description",
+        default="A clear female voice speaks with moderate speed and pitch.",
+        help="Voice description",
+    )
+    tts_parser.add_argument(
+        "--formats",
+        nargs="+",
+        choices=["wav", "opus", "ogg", "mp3"],
+        default=["wav"],
+        help="Output formats",
+    )
     tts_parser.add_argument("-d", "--device", choices=["cpu", "cuda"], default="cpu", help="Device")
     tts_parser.add_argument("--compile", action="store_true", help="Use torch.compile")
     tts_parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
-    tts_parser.set_defaults(func=lambda args: run_command([
-        sys.executable, "parler_tts_jit.py", args.model_path, args.text,
-        "-o", args.output, "--description", args.description,
-        "--formats"] + args.formats + ["-d", args.device] +
-        (["--compile"] if args.compile else []) + (["-v"] if args.verbose else []),
-        "Generating speech"))
+    tts_parser.set_defaults(
+        func=lambda args: run_command(
+            [
+                sys.executable,
+                "parler_tts_jit.py",
+                args.model_path,
+                args.text,
+                "-o",
+                args.output,
+                "--description",
+                args.description,
+                "--formats",
+            ]
+            + args.formats
+            + ["-d", args.device]
+            + (["--compile"] if args.compile else [])
+            + (["-v"] if args.verbose else []),
+            "Generating speech",
+        )
+    )
 
     args = parser.parse_args()
 

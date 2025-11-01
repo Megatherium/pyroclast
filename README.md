@@ -1,6 +1,8 @@
-# Executorch Toolkit
+# Pyroclast
 
-A comprehensive toolkit for converting, running, analyzing, and benchmarking PyTorch models with Executorch. Built specifically to handle complex models like ParlerTTS with support for multiple backends.
+**A comprehensive Executorch toolkit for converting, running, analyzing, and benchmarking PyTorch models.**
+
+Built to handle complex models like ParlerTTS with support for multiple backends (XNNPACK, Vulkan, portable).
 
 ## 🚀 Features
 
@@ -36,18 +38,18 @@ All dependencies are pre-installed in the `torch` virtualenv:
 
 ### Master CLI
 
-The toolkit provides a unified CLI (`etorch.py`) with five main commands:
+The toolkit provides a unified CLI (`pyroclast.py`) with five main commands:
 
 ```bash
 # Display help and see the beautiful banner
-python3 etorch.py
+python3 pyroclast.py
 
 # Get help for specific commands
-python3 etorch.py convert --help
-python3 etorch.py run --help
-python3 etorch.py analyze --help
-python3 etorch.py compare --help
-python3 etorch.py optimize --help
+python3 pyroclast.py convert --help
+python3 pyroclast.py run --help
+python3 pyroclast.py analyze --help
+python3 pyroclast.py compare --help
+python3 pyroclast.py optimize --help
 ```
 
 ### 1. Convert a Model
@@ -56,16 +58,16 @@ Convert a HuggingFace or PyTorch model to Executorch format:
 
 ```bash
 # Basic conversion (XNNPACK backend for CPU)
-python3 etorch.py convert models/eclipse_code -o outputs/
+python3 pyroclast.py convert models/eclipse_code -o outputs/
 
 # Convert with Vulkan backend
-python3 etorch.py convert models/eclipse_code -o outputs/ --backend vulkan
+python3 pyroclast.py convert models/eclipse_code -o outputs/ --backend vulkan
 
 # Convert with portable backend (maximum compatibility)
-python3 etorch.py convert models/eclipse_code -o outputs/ --backend portable
+python3 pyroclast.py convert models/eclipse_code -o outputs/ --backend portable
 
 # With quantization
-python3 etorch.py convert models/eclipse_code -o outputs/ --quantize
+python3 pyroclast.py convert models/eclipse_code -o outputs/ --quantize
 
 # With custom inputs from JSON file
 python3 etorch_converter.py models/my_model -o outputs/ --input-file inputs.json
@@ -96,13 +98,13 @@ Run inference on a converted Executorch model:
 
 ```bash
 # Basic inference
-python3 etorch.py run outputs/model.pte
+python3 pyroclast.py run outputs/model.pte
 
 # With benchmarking
-python3 etorch.py run outputs/model.pte --benchmark
+python3 pyroclast.py run outputs/model.pte --benchmark
 
 # Custom benchmark parameters
-python3 etorch.py run outputs/model.pte --benchmark --runs 1000 --warmup 50
+python3 pyroclast.py run outputs/model.pte --benchmark --runs 1000 --warmup 50
 ```
 
 ### 3. Analyze Model Architecture
@@ -111,13 +113,13 @@ Inspect and analyze model structure:
 
 ```bash
 # Basic analysis
-python3 etorch.py analyze models/eclipse_code
+python3 pyroclast.py analyze models/eclipse_code
 
 # Deeper tree visualization
-python3 etorch.py analyze models/eclipse_code --max-depth 5
+python3 pyroclast.py analyze models/eclipse_code --max-depth 5
 
 # Save analysis report
-python3 etorch.py analyze models/eclipse_code --save-report
+python3 pyroclast.py analyze models/eclipse_code --save-report
 ```
 
 The analyzer provides:
@@ -132,10 +134,10 @@ Benchmark and compare different models/backends:
 
 ```bash
 # Compare PyTorch baseline vs Executorch
-python3 etorch.py compare --baseline mobilenet_v2 --executorch outputs/*.pte
+python3 pyroclast.py compare --baseline mobilenet_v2 --executorch outputs/*.pte
 
 # Multiple Executorch models
-python3 etorch.py compare \\
+python3 pyroclast.py compare \\
   --baseline mobilenet_v2 \\
   --executorch outputs/model_xnnpack.pte outputs/model_vulkan.pte \\
   --runs 500 \\
@@ -155,13 +157,13 @@ Automatically test all backends and select the best one:
 
 ```bash
 # Auto-optimize (tests all backends)
-python3 etorch.py optimize models/my_model -o outputs/
+python3 pyroclast.py optimize models/my_model -o outputs/
 
 # Test specific backends only
-python3 etorch.py optimize models/my_model -o outputs/ --backends portable xnnpack
+python3 pyroclast.py optimize models/my_model -o outputs/ --backends portable xnnpack
 
 # More benchmark runs for accuracy
-python3 etorch.py optimize models/my_model -o outputs/ --runs 200
+python3 pyroclast.py optimize models/my_model -o outputs/ --runs 200
 ```
 
 The optimizer:
@@ -252,18 +254,18 @@ Here's a complete workflow from model download to performance analysis:
 # 1. Model is already downloaded in models/eclipse_code/
 
 # 2. Analyze the original model
-python3 etorch.py analyze models/eclipse_code --max-depth 3
+python3 pyroclast.py analyze models/eclipse_code --max-depth 3
 
 # 3. Convert to multiple backends
-python3 etorch.py convert models/eclipse_code -o outputs/ --backend xnnpack
-python3 etorch.py convert models/eclipse_code -o outputs/ --backend portable
+python3 pyroclast.py convert models/eclipse_code -o outputs/ --backend xnnpack
+python3 pyroclast.py convert models/eclipse_code -o outputs/ --backend portable
 
 # 4. Benchmark individual models
-python3 etorch.py run outputs/eclipse_code_xnnpack.pte --benchmark --runs 100
-python3 etorch.py run outputs/eclipse_code_portable.pte --benchmark --runs 100
+python3 pyroclast.py run outputs/eclipse_code_xnnpack.pte --benchmark --runs 100
+python3 pyroclast.py run outputs/eclipse_code_portable.pte --benchmark --runs 100
 
 # 5. Compare performance
-python3 etorch.py compare \\
+python3 pyroclast.py compare \\
   --executorch outputs/eclipse_code_xnnpack.pte outputs/eclipse_code_portable.pte \\
   --runs 200 \\
   --save comparison.json
@@ -346,7 +348,7 @@ The portable backend is intentionally unoptimized for compatibility. Use XNNPACK
 
 ```
 torch/
-├── etorch.py                 # Master CLI
+├── pyroclast.py                 # Master CLI
 ├── etorch_converter.py       # Model converter
 ├── etorch_runner.py          # Inference runner
 ├── etorch_compare.py         # Performance comparator

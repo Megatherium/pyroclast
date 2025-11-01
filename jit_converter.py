@@ -298,7 +298,7 @@ class JITConverter:
             print(f"\n{Colors.BOLD}Next steps:{Colors.END}")
             print("  1. Run inference: python3 jit_runner.py <output_file>")
             print("  2. Benchmark: python3 jit_runner.py <output_file> --benchmark")
-            print("  3. Compare: python3 etorch.py compare --jit <output_file>")
+            print("  3. Compare: python3 pyroclast.py compare --jit <output_file>")
 
             return output_file
 

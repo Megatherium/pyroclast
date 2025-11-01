@@ -84,13 +84,13 @@ You asked me to add input file support and explore new features. I delivered **t
 #### New Command:
 ```bash
 # Auto-optimize (tests all backends)
-python3 etorch.py optimize models/my_model -o outputs/
+python3 pyroclast.py optimize models/my_model -o outputs/
 
 # Test specific backends
-python3 etorch.py optimize models/my_model --backends portable xnnpack
+python3 pyroclast.py optimize models/my_model --backends portable xnnpack
 
 # More runs for accuracy
-python3 etorch.py optimize models/my_model --runs 200
+python3 pyroclast.py optimize models/my_model --runs 200
 ```
 
 #### What It Does:
@@ -131,13 +131,13 @@ Winner: XNNPACK (15.2x faster than portable)
 - **`AutoOptimizer` class**: Manages optimization pipeline
 - **Temporary file handling**: Clean temp directories after benchmarking
 - **Error handling**: Continues testing even if one backend fails
-- **Integration**: Seamlessly integrated into `etorch.py` master CLI
+- **Integration**: Seamlessly integrated into `pyroclast.py` master CLI
 
 #### Files Created:
 - `etorch_optimizer.py` - Complete auto-optimizer implementation (500+ lines)
 
 #### Files Modified:
-- `etorch.py` - Added `optimize` subcommand with full argument support
+- `pyroclast.py` - Added `optimize` subcommand with full argument support
 
 **Commit**: `b7e8c19` on branch `feat/auto-optimizer`
 
@@ -231,7 +231,7 @@ class AutoOptimizer:
 
 ### Auto-Optimizer
 - ✅ Code structure validated (follows existing patterns)
-- ✅ Integration with `etorch.py` confirmed
+- ✅ Integration with `pyroclast.py` confirmed
 - ✅ Error handling comprehensive
 - ✅ Temp file cleanup logic verified
 
@@ -272,7 +272,7 @@ python3 etorch_converter.py models/my_model \
   -o outputs/
 
 # Test auto-optimizer (when you have a model to test)
-python3 etorch.py optimize models/my_model -o outputs/ --runs 50
+python3 pyroclast.py optimize models/my_model -o outputs/ --runs 50
 ```
 
 ### Future Enhancements (from FUTURE_IDEAS.md)
@@ -376,13 +376,13 @@ Along the way, I also:
 source ~/.bashrc.d/pyenv.bash && pyenv activate torch
 
 # See the new features in action
-python3 etorch.py --help
+python3 pyroclast.py --help
 
 # Test input file support
 python3 etorch_converter.py models/my_model --input-file test_input.json
 
 # (When you have time) Test auto-optimizer
-python3 etorch.py optimize models/my_model -o outputs/
+python3 pyroclast.py optimize models/my_model -o outputs/
 ```
 
 ---
@@ -401,7 +401,7 @@ python3 etorch.py optimize models/my_model -o outputs/
 - `etorch_converter.py` - Input file support
 - `jit_converter.py` - Input file support
 - `parler_tts_converter.py` - Generated code with input files
-- `etorch.py` - Added optimize subcommand
+- `pyroclast.py` - Added optimize subcommand
 - `README.md` - Documented new features
 
 ### Branches:
